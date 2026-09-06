@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kang Laoshi - 交互式视频演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* 拼音汉字注音样式 (Ruby) */
+        ruby { ruby-align: center; }
+        rt { font-size: 0.75rem; color: #6b7280; user-select: none; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
+
+    <!-- 顶部简易导航 -->
+    <header class="bg-white border-b border-gray-200 h-16 flex items-center shrink-0 z-50">
+        <div class="max-w-5xl w-full mx-auto px-4 flex justify-between items-center">
+            <a href="#" class="text-xl font-bold text-red-600 flex items-center gap-2">
+                <i data-lucide="book-open"></i>
+                <span>康老师中文</span>
+            </a>
+            <button class="text-sm font-medium text-gray-500 hover:text-gray-900">返回课程列表</button>
+        </div>
+    </header>
+
+    <!-- 主体内容区 -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 flex flex-col lg:flex-row gap-6">
+        
+        <!-- 左侧/上方：视频播放器区域 -->
+        <div class="w-full lg:w-3/5 flex flex-col gap-4">
+            <div class="bg-black rounded-xl overflow-hidden shadow-lg aspect-video relative">
+                <!-- 添加占位提示：当沙盒拦截视频时，能给用户明确的反馈 -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-6 text-center z-0">
+                    <p class="text-sm mb-1">正在加载 YouTube 播放器...</p>
+                    <p class="text-xs opacity-75">如果一直黑屏，说明当前的预览沙盒或您的浏览器插件拦截了该视频嵌入。</p>
+                </div>
+                
+                <!-- 使用 youtube-nocookie.com 提高嵌入成功率，避免因跨站 Cookie 被拦截 -->
+                <iframe id="youtube-player" class="absolute inset-0 w-full h-full z-10" 
+                        src="https://www.youtube-nocookie.com/embed/5yfuRvd4Scg?enablejsapi=1&playsinline=1&rel=0" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                        allowfullscreen>
+                </iframe>
+            </div>
+            
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <h1 class="text-2xl font-bold mb-2">如何在餐厅用中文点菜？</h1>
+                <div class="flex items-center gap-4 text-sm text-gray-500">
+                    <span class="bg-red-50 text-red-600 px-2 py-1 rounded font-medium">Beginner (初级)</span>
+                    <span><i data-lucide="tag" class="w-4 h-4 inline mr-1"></i>Food (美食)</span>
+                </div>
+                <p class="mt-4 text-gray-600 text-sm leading-relaxed">
+                    在这节课中，我们将学习中国餐厅里最常用的点菜句子。注意听康老师的发音，你可以点击右侧（或下方）的字幕来反复练习某一句！
+                </p>
+            </div>
+        </div>
+
+        <!-- 右侧/下方：交互式同步字幕区域 -->
+        <div class="w-full lg:w-2/5 flex flex-col h-[600px]">
+            <div class="bg-white rounded-t-xl p-4 border border-gray-100 border-b-0 flex justify-between items-center shadow-sm">
+                <h2 class="font-bold flex items-center gap-2">
+                    <i data-lucide="align-left" class="w-5 h-5 text-red-600"></i>
+                    互动字幕 (Transcript)
+                </h2>
+                <!-- 控制拼音显示的开关 -->
+                <label class="flex items-center cursor-pointer">
+                    <div class="relative">
+                        <input type="checkbox" id="toggle-pinyin" class="sr-only" checked>
+                        <div class="block bg-gray-200 w-10 h-6 rounded-full transition-colors toggle-bg"></div>
+                        <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform"></div>
+                    </div>
+                    <span class="ml-2 text-sm font-medium text-gray-600">显示拼音</span>
+                </label>
+            </div>
+            
+            <!-- 滚动的字幕列表 -->
+            <div id="transcript-container" class="bg-white border border-gray-100 rounded-b-xl shadow-sm flex-1 overflow-y-auto p-2 scroll-smooth">
+                <!-- 字幕由 JavaScript 动态生成 -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 交互式词典弹窗 (Tooltip) -->
+    <div id="dictionary-tooltip" class="hidden fixed z-[100] bg-white rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] border border-red-100 p-4 min-w-[160px] transform -translate-x-1/2 transition-opacity pointer-events-none">
+        <div class="text-red-600 font-bold mb-1 text-sm text-center" id="tt-pinyin"></div>
+        <div class="text-gray-800 font-bold text-lg text-center" id="tt-trans"></div>
+        <div class="mt-2 text-[10px] text-gray-400 border-t border-gray-100 pt-2 text-center uppercase tracking-wider">O'zbek tiliga tarjima</div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // 模拟字幕数据 (细化到词级别，加入乌兹别克语翻译)
+        const transcriptData = [
+            {
+                start: 6.0, end: 14.0,
+                words: [
+                    { text: "大家", py: "dà jiā", tr: "hammaga" },
+                    { text: "好", py: "hǎo", tr: "salom" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "欢迎", py: "huān yíng", tr: "xush kelibsiz" },
+                    { text: "来到", py: "lái dào", tr: "kelmoq" },
+                    { text: "Slow Chinese podcast", py: "", tr: "Slow Chinese podkasti" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "是", py: "shì", tr: "-man" },
+                    { text: "陈静", py: "Chén Jìng", tr: "Chen Jing" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "大家", py: "dà jiā", tr: "hammaga" },
+                    { text: "好", py: "hǎo", tr: "salom" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 14.0, end: 19.0,
+                words: [
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "是", py: "shì", tr: "-man" },
+                    { text: "林风", py: "Lín Fēng", tr: "Lin Feng" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "今天", py: "jīn tiān", tr: "bugun" },
+                    { text: "我们", py: "wǒ men", tr: "biz" },
+                    { text: "要", py: "yào", tr: "-moqchi" },
+                    { text: "聊", py: "liáo", tr: "gaplashmoq" },
+                    { text: "一个", py: "yí ge", tr: "bir" },
+                    { text: "很", py: "hěn", tr: "juda" },
+                    { text: "简单", py: "jiǎn dān", tr: "oddiy" },
+                    { text: "也", py: "yě", tr: "ham" },
+                    { text: "很", py: "hěn", tr: "juda" },
+                    { text: "实用", py: "shí yòng", tr: "amaliy" },
+                    { text: "的", py: "de", tr: "-ning" },
+                    { text: "问题", py: "wèn tí", tr: "savol" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 19.0, end: 26.0,
+                words: [
+                    { text: "这个", py: "zhè ge", tr: "bu" },
+                    { text: "问题", py: "wèn tí", tr: "savol" },
+                    { text: "是", py: "shì", tr: "-dir" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "几点", py: "jǐ diǎn", tr: "soat nechada" },
+                    { text: "起床", py: "qǐ chuáng", tr: "uyg‘onmoq / turmoq" },
+                    { text: "？", py: "", tr: "" },
+                    { text: "听完", py: "tīng wán", tr: "tinglab bo‘lgach" },
+                    { text: "今天", py: "jīn tiān", tr: "bugungi" },
+                    { text: "的", py: "de", tr: "-ning" },
+                    { text: "节目", py: "jié mù", tr: "dastur" },
+                    { text: "，", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 26.0, end: 31.0,
+                words: [
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "会", py: "huì", tr: "qila olmoq" },
+                    { text: "学会", py: "xué huì", tr: "o‘rganib olmoq" },
+                    { text: "用", py: "yòng", tr: "foydalanmoq" },
+                    { text: "中文", py: "Zhōng wén", tr: "xitoy tili" },
+                    { text: "说", py: "shuō", tr: "aytmoq" },
+                    { text: "自己", py: "zì jǐ", tr: "o‘z" },
+                    { text: "的", py: "de", tr: "-ning" },
+                    { text: "早上", py: "zǎo shang", tr: "ertalab" },
+                    { text: "生活", py: "shēng huó", tr: "hayot" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 31.0, end: 38.0,
+                words: [
+                    { text: "比如", py: "bǐ rú", tr: "masalan" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "6点半", py: "liù diǎn bàn", tr: "soat olti yarimda" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turgandan" },
+                    { text: "以后", py: "yǐ hòu", tr: "keyin" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "刷牙", py: "shuā yá", tr: "tish yuvmoq" },
+                    { text: "，", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 38.0, end: 45.0,
+                words: [
+                    { text: "洗脸", py: "xǐ liǎn", tr: "yuz yuvmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "吃早饭", py: "chī zǎo fàn", tr: "nonushta qilmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "好", py: "hǎo", tr: "yaxshi" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "我们", py: "wǒ men", tr: "biz" },
+                    { text: "现在", py: "xiàn zài", tr: "hozir" },
+                    { text: "开始", py: "kāi shǐ", tr: "boshlamoq" },
+                    { text: "吧", py: "ba", tr: "keling" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "陈静", py: "Chén Jìng", tr: "Chen Jing" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "几点", py: "jǐ diǎn", tr: "soat nechada" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "？", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 45.0, end: 52.0,
+                words: [
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "6点半", py: "liù diǎn bàn", tr: "soat olti yarimda" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "6点半", py: "liù diǎn bàn", tr: "soat olti yarim" },
+                    { text: "很", py: "hěn", tr: "juda" },
+                    { text: "早", py: "zǎo", tr: "erta" },
+                    { text: "啊", py: "a", tr: "" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "是呀", py: "shì ya", tr: "ha, shunday" },
+                    { text: "，", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 52.0, end: 58.0,
+                words: [
+                    { text: "以前", py: "yǐ qián", tr: "oldin" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "也", py: "yě", tr: "ham" },
+                    { text: "起", py: "qǐ", tr: "turmoq" },
+                    { text: "得", py: "de", tr: "" },
+                    { text: "很", py: "hěn", tr: "juda" },
+                    { text: "晚", py: "wǎn", tr: "kech" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "现在", py: "xiàn zài", tr: "hozir" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "想", py: "xiǎng", tr: "xohlamoq" },
+                    { text: "早", py: "zǎo", tr: "erta" },
+                    { text: "一点", py: "yì diǎn", tr: "biroz" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 58.0, end: 63.0,
+                words: [
+                    { text: "为什么", py: "wèi shén me", tr: "nima uchun" },
+                    { text: "呢", py: "ne", tr: "" },
+                    { text: "？", py: "", tr: "" },
+                    { text: "因为", py: "yīn wèi", tr: "chunki" },
+                    { text: "早上", py: "zǎo shang", tr: "ertalab" },
+                    { text: "时间", py: "shí jiān", tr: "vaqt" },
+                    { text: "多", py: "duō", tr: "ko‘p" },
+                    { text: "一点", py: "yì diǎn", tr: "biroz" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "心情", py: "xīn qíng", tr: "kayfiyat" },
+                    { text: "也", py: "yě", tr: "ham" },
+                    { text: "会", py: "huì", tr: "bo‘ladi" },
+                    { text: "好", py: "hǎo", tr: "yaxshi" },
+                    { text: "一点", py: "yì diǎn", tr: "biroz" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 63.0, end: 68.0,
+                words: [
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "明白", py: "míng bai", tr: "tushunmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "早上", py: "zǎo shang", tr: "ertalab" },
+                    { text: "不", py: "bù", tr: "emas" },
+                    { text: "着急", py: "zháo jí", tr: "shoshilmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "心情", py: "xīn qíng", tr: "kayfiyat" },
+                    { text: "会", py: "huì", tr: "bo‘ladi" },
+                    { text: "比较", py: "bǐ jiào", tr: "nisbatan" },
+                    { text: "轻松", py: "qīng sōng", tr: "xotirjam" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "对", py: "duì", tr: "to‘g‘ri" },
+                    { text: "，", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 68.0, end: 76.0,
+                words: [
+                    { text: "起床", py: "qǐ chuáng", tr: "turgandan" },
+                    { text: "以后", py: "yǐ hòu", tr: "keyin" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "先", py: "xiān", tr: "avval" },
+                    { text: "刷牙", py: "shuā yá", tr: "tish yuvmoq" },
+                    { text: "洗脸", py: "xǐ liǎn", tr: "yuz yuvmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "然后", py: "rán hòu", tr: "keyin" },
+                    { text: "呢", py: "ne", tr: "" },
+                    { text: "？", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 76.0, end: 83.0,
+                words: [
+                    { text: "然后", py: "rán hòu", tr: "keyin" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "喝", py: "hē", tr: "ichmoq" },
+                    { text: "一杯", py: "yì bēi", tr: "bir stakan" },
+                    { text: "温水", py: "wēn shuǐ", tr: "iliq suv" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "再", py: "zài", tr: "keyin" },
+                    { text: "吃早饭", py: "chī zǎo fàn", tr: "nonushta qilmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "早饭", py: "zǎo fàn", tr: "nonushta" },
+                    { text: "吃", py: "chī", tr: "yemoq" },
+                    { text: "什么", py: "shén me", tr: "nima" },
+                    { text: "？", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 83.0, end: 91.0,
+                words: [
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "常常", py: "cháng cháng", tr: "ko‘pincha" },
+                    { text: "吃", py: "chī", tr: "yemoq" },
+                    { text: "鸡蛋", py: "jī dàn", tr: "tuxum" },
+                    { text: "和", py: "hé", tr: "va" },
+                    { text: "面包", py: "miàn bāo", tr: "non" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "有时候", py: "yǒu shí hou", tr: "ba’zan" },
+                    { text: "喝", py: "hē", tr: "ichmoq" },
+                    { text: "牛奶", py: "niú nǎi", tr: "sut" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "很", py: "hěn", tr: "juda" },
+                    { text: "健康", py: "jiàn kāng", tr: "sog‘lom" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 91.0, end: 98.0,
+                words: [
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "就", py: "jiù", tr: "esa" },
+                    { text: "不一样", py: "bù yí yàng", tr: "boshqacha" },
+                    { text: "了", py: "le", tr: "" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "7点半", py: "qī diǎn bàn", tr: "soat yetti yarimda" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 98.0, end: 106.0,
+                words: [
+                    { text: "7点半", py: "qī diǎn bàn", tr: "soat yetti yarim" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "？", py: "", tr: "" },
+                    { text: "那", py: "nà", tr: "unda" },
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "几点", py: "jǐ diǎn", tr: "soat nechada" },
+                    { text: "上班", py: "shàng bān", tr: "ishga bormoq" },
+                    { text: "？", py: "", tr: "" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "8点", py: "bā diǎn", tr: "soat sakkizda" },
+                    { text: "上班", py: "shàng bān", tr: "ishga bormoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 106.0, end: 113.0,
+                words: [
+                    { text: "所以", py: "suǒ yǐ", tr: "shuning uchun" },
+                    { text: "早上", py: "zǎo shang", tr: "ertalab" },
+                    { text: "常常", py: "cháng cháng", tr: "ko‘pincha" },
+                    { text: "很", py: "hěn", tr: "juda" },
+                    { text: "着急", py: "zháo jí", tr: "shoshilmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "那", py: "nà", tr: "unda" },
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "吃早饭", py: "chī zǎo fàn", tr: "nonushta qilmoq" },
+                    { text: "吗", py: "ma", tr: "" },
+                    { text: "？", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 113.0, end: 119.0,
+                words: [
+                    { text: "有时候", py: "yǒu shí hou", tr: "ba’zan" },
+                    { text: "吃", py: "chī", tr: "yemoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "有时候", py: "yǒu shí hou", tr: "ba’zan" },
+                    { text: "不", py: "bù", tr: "emas" },
+                    { text: "吃", py: "chī", tr: "yemoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "早饭", py: "zǎo fàn", tr: "nonushta" },
+                    { text: "很", py: "hěn", tr: "juda" },
+                    { text: "重要", py: "zhòng yào", tr: "muhim" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "可以", py: "kě yǐ", tr: "mumkin" },
+                    { text: "早", py: "zǎo", tr: "erta" },
+                    { text: "一点", py: "yì diǎn", tr: "biroz" },
+                    { text: "睡觉", py: "shuì jiào", tr: "uxlamoq" },
+                    { text: "，", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 119.0, end: 126.0,
+                words: [
+                    { text: "早", py: "zǎo", tr: "erta" },
+                    { text: "一点", py: "yì diǎn", tr: "biroz" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "对", py: "duì", tr: "to‘g‘ri" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "也", py: "yě", tr: "ham" },
+                    { text: "想", py: "xiǎng", tr: "xohlamoq" },
+                    { text: "试试看", py: "shì shi kàn", tr: "sinab ko‘rmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "早", py: "zǎo", tr: "erta" },
+                    { text: "一点", py: "yì diǎn", tr: "biroz" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 126.0, end: 132.0,
+                words: [
+                    { text: "也许", py: "yě xǔ", tr: "balki" },
+                    { text: "生活", py: "shēng huó", tr: "hayot" },
+                    { text: "会", py: "huì", tr: "bo‘ladi" },
+                    { text: "更", py: "gèng", tr: "yanada" },
+                    { text: "有规律", py: "yǒu guī lǜ", tr: "tartibli" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "好", py: "hǎo", tr: "yaxshi" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "现在", py: "xiàn zài", tr: "hozir" },
+                    { text: "我们", py: "wǒ men", tr: "biz" },
+                    { text: "来", py: "lái", tr: "" },
+                    { text: "学习", py: "xué xí", tr: "o‘rganmoq" },
+                    { text: "今天", py: "jīn tiān", tr: "bugungi" },
+                    { text: "的", py: "de", tr: "-ning" },
+                    { text: "关键词", py: "guān jiàn cí", tr: "asosiy so‘zlar" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 132.0, end: 140.0,
+                words: [
+                    { text: "第一个词", py: "dì yí ge cí", tr: "birinchi so‘z" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "意思", py: "yì si", tr: "ma’nosi" },
+                    { text: "是", py: "shì", tr: "-dir" },
+                    { text: "get up", py: "", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "请跟我说", py: "qǐng gēn wǒ shuō", tr: "men bilan ayting" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 140.0, end: 150.0,
+                words: [
+                    { text: "第二个词", py: "dì èr ge cí", tr: "ikkinchi so‘z" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "刷牙", py: "shuā yá", tr: "tish yuvmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "刷牙", py: "shuā yá", tr: "tish yuvmoq" },
+                    { text: "意思", py: "yì si", tr: "ma’nosi" },
+                    { text: "是", py: "shì", tr: "-dir" },
+                    { text: "brush teeth", py: "", tr: "tish yuvmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "请跟我说", py: "qǐng gēn wǒ shuō", tr: "men bilan ayting" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "刷牙", py: "shuā yá", tr: "tish yuvmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 150.0, end: 163.0,
+                words: [
+                    { text: "第三个词", py: "dì sān ge cí", tr: "uchinchi so‘z" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "洗脸", py: "xǐ liǎn", tr: "yuz yuvmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "洗脸", py: "xǐ liǎn", tr: "yuz yuvmoq" },
+                    { text: "意思", py: "yì si", tr: "ma’nosi" },
+                    { text: "是", py: "shì", tr: "-dir" },
+                    { text: "wash your face", py: "", tr: "yuzingizni yuvmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "请跟我说", py: "qǐng gēn wǒ shuō", tr: "men bilan ayting" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "洗脸", py: "xǐ liǎn", tr: "yuz yuvmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 163.0, end: 174.0,
+                words: [
+                    { text: "第四个词", py: "dì sì ge cí", tr: "to‘rtinchi so‘z" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "早饭", py: "zǎo fàn", tr: "nonushta" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "吃早饭", py: "chī zǎo fàn", tr: "nonushta qilmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "意思", py: "yì si", tr: "ma’nosi" },
+                    { text: "是", py: "shì", tr: "-dir" },
+                    { text: "Have breakfast", py: "", tr: "nonushta qilmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "请跟我说", py: "qǐng gēn wǒ shuō", tr: "men bilan ayting" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "吃早饭", py: "chī zǎo fàn", tr: "nonushta qilmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 174.0, end: 187.0,
+                words: [
+                    { text: "还有", py: "hái yǒu", tr: "yana" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "上班", py: "shàng bān", tr: "ishga bormoq" },
+                    { text: "、", py: "", tr: "" },
+                    { text: "睡觉", py: "shuì jiào", tr: "uxlamoq" },
+                    { text: "、", py: "", tr: "" },
+                    { text: "早点", py: "zǎo diǎn", tr: "ertaroq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "现在", py: "xiàn zài", tr: "hozir" },
+                    { text: "我们", py: "wǒ men", tr: "biz" },
+                    { text: "来", py: "lái", tr: "" },
+                    { text: "看", py: "kàn", tr: "ko‘rmoq" },
+                    { text: "一个", py: "yí ge", tr: "bir" },
+                    { text: "很", py: "hěn", tr: "juda" },
+                    { text: "有用", py: "yǒu yòng", tr: "foydali" },
+                    { text: "的", py: "de", tr: "" },
+                    { text: "句子", py: "jù zi", tr: "gap" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 187.0, end: 195.0,
+                words: [
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "6点半", py: "liù diǎn bàn", tr: "soat olti yarimda" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "这个", py: "zhè ge", tr: "bu" },
+                    { text: "句子", py: "jù zi", tr: "gap" },
+                    { text: "的", py: "de", tr: "-ning" },
+                    { text: "结构", py: "jié gòu", tr: "tuzilishi" },
+                    { text: "是", py: "shì", tr: "-dir" },
+                    { text: "：", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 195.0, end: 204.0,
+                words: [
+                    { text: "我每天", py: "wǒ měi tiān", tr: "men har kuni" },
+                    { text: "+", py: "", tr: "" },
+                    { text: "加", py: "jiā", tr: "qo‘shmoq" },
+                    { text: "时间", py: "shí jiān", tr: "vaqt" },
+                    { text: "+", py: "", tr: "" },
+                    { text: "加", py: "jiā", tr: "qo‘shmoq" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "我每天", py: "wǒ měi tiān", tr: "men har kuni" },
+                    { text: "7点", py: "qī diǎn", tr: "soat yettida" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 204.0, end: 214.0,
+                words: [
+                    { text: "我每天", py: "wǒ měi tiān", tr: "men har kuni" },
+                    { text: "8点", py: "bā diǎn", tr: "soat sakkizda" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "也", py: "yě", tr: "ham" },
+                    { text: "可以", py: "kě yǐ", tr: "mumkin" },
+                    { text: "说", py: "shuō", tr: "aytmoq" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turgandan" },
+                    { text: "以后", py: "yǐ hòu", tr: "keyin" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "刷牙", py: "shuā yá", tr: "tish yuvmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "洗脸", py: "xǐ liǎn", tr: "yuz yuvmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "吃早饭", py: "chī zǎo fàn", tr: "nonushta qilmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 214.0, end: 226.0,
+                words: [
+                    { text: "以后", py: "yǐ hòu", tr: "keyin" },
+                    { text: "的", py: "de", tr: "" },
+                    { text: "意思", py: "yì si", tr: "ma’nosi" },
+                    { text: "是", py: "shì", tr: "-dir" },
+                    { text: "after", py: "", tr: "keyin" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turish" },
+                    { text: "以后", py: "yǐ hòu", tr: "keyin" },
+                    { text: "就是", py: "jiù shì", tr: "ya’ni" },
+                    { text: "after getting up", py: "", tr: "turgandan keyin" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 226.0, end: 236.0,
+                words: [
+                    { text: "好", py: "hǎo", tr: "yaxshi" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "现在", py: "xiàn zài", tr: "hozir" },
+                    { text: "到了", py: "dào le", tr: "yetib keldi" },
+                    { text: "练习", py: "liàn xí", tr: "mashq" },
+                    { text: "时间", py: "shí jiān", tr: "vaqti" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "请跟我们一起说", py: "qǐng gēn wǒ men yì qǐ shuō", tr: "biz bilan birga ayting" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "几点", py: "jǐ diǎn", tr: "soat nechada" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "？", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 236.0, end: 246.0,
+                words: [
+                    { text: "再", py: "zài", tr: "yana" },
+                    { text: "说", py: "shuō", tr: "aytmoq" },
+                    { text: "一遍", py: "yí biàn", tr: "bir marta" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "几点", py: "jǐ diǎn", tr: "soat nechada" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "？", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 246.0, end: 256.0,
+                words: [
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "6点半", py: "liù diǎn bàn", tr: "soat olti yarimda" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "6点半", py: "liù diǎn bàn", tr: "soat olti yarimda" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 256.0, end: 267.0,
+                words: [
+                    { text: "起床", py: "qǐ chuáng", tr: "turgandan" },
+                    { text: "以后", py: "yǐ hòu", tr: "keyin" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "刷牙", py: "shuā yá", tr: "tish yuvmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turgandan" },
+                    { text: "以后", py: "yǐ hòu", tr: "keyin" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "洗脸", py: "xǐ liǎn", tr: "yuz yuvmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turgandan" },
+                    { text: "以后", py: "yǐ hòu", tr: "keyin" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "吃早饭", py: "chī zǎo fàn", tr: "nonushta qilmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 267.0, end: 276.0,
+                words: [
+                    { text: "很好", py: "hěn hǎo", tr: "juda yaxshi" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "现在", py: "xiàn zài", tr: "hozir" },
+                    { text: "我们", py: "wǒ men", tr: "biz" },
+                    { text: "把", py: "bǎ", tr: "" },
+                    { text: "句子", py: "jù zi", tr: "gapni" },
+                    { text: "连起来", py: "lián qǐ lái", tr: "birlashtirmoq" },
+                    { text: "说", py: "shuō", tr: "aytmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "6点半", py: "liù diǎn bàn", tr: "soat olti yarimda" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "，", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 276.0, end: 288.0,
+                words: [
+                    { text: "起床", py: "qǐ chuáng", tr: "turgandan" },
+                    { text: "以后", py: "yǐ hòu", tr: "keyin" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "刷牙", py: "shuā yá", tr: "tish yuvmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "洗脸", py: "xǐ liǎn", tr: "yuz yuvmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "吃早饭", py: "chī zǎo fàn", tr: "nonushta qilmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "很棒", py: "hěn bàng", tr: "juda zo‘r" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 288.0, end: 297.0,
+                words: [
+                    { text: "现在", py: "xiàn zài", tr: "hozir" },
+                    { text: "轮到", py: "lún dào", tr: "navbat kelmoq" },
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "请", py: "qǐng", tr: "iltimos" },
+                    { text: "回答", py: "huí dá", tr: "javob bermoq" },
+                    { text: "这个", py: "zhè ge", tr: "bu" },
+                    { text: "问题", py: "wèn tí", tr: "savol" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "几点", py: "jǐ diǎn", tr: "soat nechada" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "？", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 297.0, end: 308.0,
+                words: [
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "可以", py: "kě yǐ", tr: "mumkin" },
+                    { text: "说", py: "shuō", tr: "aytmoq" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "6点", py: "liù diǎn", tr: "soat oltida" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "或者", py: "huò zhě", tr: "yoki" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "7点半", py: "qī diǎn bàn", tr: "soat yetti yarimda" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 308.0, end: 317.0,
+                words: [
+                    { text: "如果", py: "rú guǒ", tr: "agar" },
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "起", py: "qǐ", tr: "turmoq" },
+                    { text: "得", py: "de", tr: "" },
+                    { text: "很", py: "hěn", tr: "juda" },
+                    { text: "晚", py: "wǎn", tr: "kech" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "也", py: "yě", tr: "ham" },
+                    { text: "可以", py: "kě yǐ", tr: "mumkin" },
+                    { text: "说", py: "shuō", tr: "aytmoq" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "8点", py: "bā diǎn", tr: "soat sakkizda" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 317.0, end: 324.0,
+                words: [
+                    { text: "不要", py: "bú yào", tr: "kerak emas" },
+                    { text: "担心", py: "dān xīn", tr: "xavotir olmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "说", py: "shuō", tr: "aytmoq" },
+                    { text: "简单", py: "jiǎn dān", tr: "oddiy" },
+                    { text: "的", py: "de", tr: "" },
+                    { text: "句子", py: "jù zi", tr: "gaplar" },
+                    { text: "就", py: "jiù", tr: "shunchaki" },
+                    { text: "可以", py: "kě yǐ", tr: "mumkin" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 324.0, end: 338.0,
+                words: [
+                    { text: "今天", py: "jīn tiān", tr: "bugun" },
+                    { text: "我们", py: "wǒ men", tr: "biz" },
+                    { text: "学习", py: "xué xí", tr: "o‘rgandik" },
+                    { text: "了", py: "le", tr: "" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "刷牙", py: "shuā yá", tr: "tish yuvmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "洗脸", py: "xǐ liǎn", tr: "yuz yuvmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "吃早饭", py: "chī zǎo fàn", tr: "nonushta qilmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "上班", py: "shàng bān", tr: "ishga bormoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "睡觉", py: "shuì jiào", tr: "uxlamoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 338.0, end: 347.0,
+                words: [
+                    { text: "我们", py: "wǒ men", tr: "biz" },
+                    { text: "也", py: "yě", tr: "ham" },
+                    { text: "学习", py: "xué xí", tr: "o‘rgandik" },
+                    { text: "了", py: "le", tr: "" },
+                    { text: "一个", py: "yí ge", tr: "bir" },
+                    { text: "重要", py: "zhòng yào", tr: "muhim" },
+                    { text: "的", py: "de", tr: "" },
+                    { text: "句子", py: "jù zi", tr: "gap" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "几点", py: "jǐ diǎn", tr: "soat nechada" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 347.0, end: 354.0,
+                words: [
+                    { text: "请", py: "qǐng", tr: "iltimos" },
+                    { text: "在", py: "zài", tr: "-da" },
+                    { text: "评论区", py: "píng lùn qū", tr: "izohlar bo‘limida" },
+                    { text: "写", py: "xiě", tr: "yozmoq" },
+                    { text: "一句", py: "yí jù", tr: "bir gap" },
+                    { text: "中文", py: "Zhōng wén", tr: "xitoy tilida" },
+                    { text: "：", py: "", tr: "" },
+                    { text: "我", py: "wǒ", tr: "men" },
+                    { text: "每天", py: "měi tiān", tr: "har kuni" },
+                    { text: "几点", py: "jǐ diǎn", tr: "soat nechada" },
+                    { text: "起床", py: "qǐ chuáng", tr: "turmoq" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 354.0, end: 361.0,
+                words: [
+                    { text: "如果", py: "rú guǒ", tr: "agar" },
+                    { text: "你", py: "nǐ", tr: "sen" },
+                    { text: "喜欢", py: "xǐ huan", tr: "yoqtirmoq" },
+                    { text: "今天", py: "jīn tiān", tr: "bugungi" },
+                    { text: "的", py: "de", tr: "" },
+                    { text: "节目", py: "jié mù", tr: "dastur" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "欢迎", py: "huān yíng", tr: "marhamat" },
+                    { text: "点赞", py: "diǎn zàn", tr: "layk bosmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "订阅", py: "dìng yuè", tr: "obuna bo‘lmoq" },
+                    { text: "，", py: "", tr: "" },
+                    { text: "并", py: "bìng", tr: "va" },
+                    { text: "分享", py: "fēn xiǎng", tr: "ulashmoq" },
+                    { text: "给", py: "gěi", tr: "-ga" },
+                    { text: "正在", py: "zhèng zài", tr: "hozir" },
+                    { text: "学习", py: "xué xí", tr: "o‘rganayotgan" },
+                    { text: "中文", py: "Zhōng wén", tr: "xitoy tilini" },
+                    { text: "的", py: "de", tr: "" },
+                    { text: "朋友", py: "péng you", tr: "do‘stlar" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            },
+            {
+                start: 361.0, end: 368.0,
+                words: [
+                    { text: "我们", py: "wǒ men", tr: "biz" },
+                    { text: "下期", py: "xià qī", tr: "keyingi son" },
+                    { text: "节目", py: "jié mù", tr: "dastur" },
+                    { text: "再见", py: "zài jiàn", tr: "xayr, ko‘rishguncha" },
+                    { text: "。", py: "", tr: "" },
+                    { text: "再见", py: "zài jiàn", tr: "xayr, ko‘rishguncha" },
+                    { text: "。", py: "", tr: "" }
+                ]
+            }
+        ];
+
+        const container = document.getElementById('transcript-container');
+        let transcriptElements = [];
+
+        // 渲染字幕到页面
+        function renderTranscript() {
+            container.innerHTML = '';
+            transcriptElements = [];
+
+            transcriptData.forEach((item, index) => {
+                const lineDiv = document.createElement('div');
+                // 修改为 Flex 布局，左侧加上一个小的播放图标
+                lineDiv.className = "flex gap-3 p-4 mb-2 rounded-lg cursor-pointer transition-all duration-200 hover:bg-red-50 border-l-4 border-transparent group";
+                lineDiv.dataset.start = item.start;
+                lineDiv.dataset.index = index;
+                
+                const playBtnHtml = `<div class="shrink-0 mt-2 text-gray-300 group-hover:text-red-500 transition-colors"><i data-lucide="play-circle" class="w-5 h-5"></i></div>`;
+                
+                let wordsHtml = '<div class="text-lg font-medium text-gray-800 leading-loose flex flex-wrap gap-x-1">';
+                
+                item.words.forEach(w => {
+                    if (w.py) {
+                        // 带有拼音和翻译的交互式词语
+                        wordsHtml += `
+                            <ruby class="dict-word relative hover:bg-red-100 hover:text-red-700 rounded px-1 transition-colors cursor-help" data-py="${w.py}" data-tr="${w.tr}">
+                                ${w.text}
+                                <rt class="pinyin-text text-sm text-gray-500 mb-1 pointer-events-none">${w.py}</rt>
+                            </ruby>
+                        `;
+                    } else {
+                        // 标点符号，不支持点击
+                        wordsHtml += `<span class="py-1 text-gray-500">${w.text}</span>`;
+                    }
+                });
+                
+                wordsHtml += '</div>';
+                lineDiv.innerHTML = playBtnHtml + wordsHtml;
+
+                // 处理点击逻辑：分清是点词查字典，还是点句子跳进度
+                lineDiv.addEventListener('click', (e) => {
+                    // 如果点中的是具体的单词，就拦截跳转行为（在后面会触发字典气泡）
+                    if (e.target.closest('.dict-word')) return;
+
+                    // 否则（点中空白处或播放按钮），控制视频跳转
+                    if (player && player.seekTo) {
+                        player.seekTo(item.start, true);
+                        player.playVideo();
+                    }
+                });
+
+                container.appendChild(lineDiv);
+                transcriptElements.push(lineDiv);
+            });
+
+            // 重新初始化图标
+            lucide.createIcons();
+            // 绑定词典交互事件
+            bindDictionaryEvents();
+        }
+
+        // ==========================================
+        // 词典交互逻辑 (弹窗)
+        // ==========================================
+        function bindDictionaryEvents() {
+            const tooltip = document.getElementById('dictionary-tooltip');
+            const pyEl = document.getElementById('tt-pinyin');
+            const trEl = document.getElementById('tt-trans');
+
+            document.querySelectorAll('.dict-word').forEach(word => {
+                word.addEventListener('click', (e) => {
+                    e.stopPropagation(); // 阻止事件冒泡
+                    const py = e.currentTarget.dataset.py;
+                    const tr = e.currentTarget.dataset.tr;
+
+                    pyEl.textContent = py;
+                    trEl.textContent = tr;
+
+                    // 计算并设置弹窗位置（在单词正上方）
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    tooltip.style.top = (rect.top + window.scrollY - tooltip.offsetHeight - 10) + 'px';
+                    tooltip.style.left = (rect.left + (rect.width / 2)) + 'px';
+
+                    tooltip.classList.remove('hidden');
+                });
+            });
+
+            // 点击页面任意其他地方隐藏弹窗
+            document.addEventListener('click', () => {
+                if (tooltip) tooltip.classList.add('hidden');
+            });
+
+            // 滚动字幕框时也隐藏弹窗，避免卡片悬停错位
+            container.addEventListener('scroll', () => {
+                if (tooltip) tooltip.classList.add('hidden');
+            });
+        }
+
+        // ==========================================
+        // YouTube IFrame API 逻辑
+        // ==========================================
+        let player;
+        let syncInterval;
+
+        // 1. 加载 YouTube API 脚本
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        if (firstScriptTag) {
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        } else {
+            document.head.appendChild(tag);
+        }
+
+        // 2. API 准备好后自动调用此函数 (绑定到全局确保被触发)
+        window.onYouTubeIframeAPIReady = function() {
+            // 直接绑定到页面上已存在的 iframe (id="youtube-player")
+            player = new YT.Player('youtube-player', {
+                events: {
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        };
+
+        // 3. 监听播放器状态
+        function onPlayerStateChange(event) {
+            if (event.data == YT.PlayerState.PLAYING) {
+                // 视频播放时，每 0.5 秒检查一次时间并同步字幕
+                syncInterval = setInterval(syncTranscript, 500);
+            } else {
+                // 暂停或结束时，停止同步
+                clearInterval(syncInterval);
+            }
+        }
+
+        // 4. 同步高亮当前字幕
+        let currentIndex = -1;
+        function syncTranscript() {
+            if (!player || !player.getCurrentTime) return;
+            const currentTime = player.getCurrentTime();
+
+            // 查找当前时间属于哪一句
+            let activeIndex = -1;
+            for (let i = 0; i < transcriptData.length; i++) {
+                if (currentTime >= transcriptData[i].start && currentTime < transcriptData[i].end) {
+                    activeIndex = i;
+                    break;
+                }
+            }
+
+            // 如果当前句子发生了变化，更新 UI
+            if (activeIndex !== currentIndex && activeIndex !== -1) {
+                // 清除之前的激活状态
+                if (currentIndex !== -1) {
+                    transcriptElements[currentIndex].classList.remove('bg-red-50', 'border-red-500');
+                    transcriptElements[currentIndex].classList.add('border-transparent');
+                }
+                
+                // 设置新的激活状态
+                transcriptElements[activeIndex].classList.add('bg-red-50', 'border-red-500');
+                transcriptElements[activeIndex].classList.remove('border-transparent');
+                
+                // 让滚轮自动滚动到高亮的那一句
+                const activeEl = transcriptElements[activeIndex];
+                container.scrollTo({
+                    top: activeEl.offsetTop - container.offsetTop - 60,
+                    behavior: 'smooth'
+                });
+
+                currentIndex = activeIndex;
+            }
+        }
+
+        // ==========================================
+        // 拼音开关逻辑
+        // ==========================================
+        const togglePinyin = document.getElementById('toggle-pinyin');
+        
+        togglePinyin.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            const dot = e.target.parentElement.querySelector('.dot');
+            const bg = e.target.parentElement.querySelector('.toggle-bg');
+            
+            // 切换开关动画
+            if(isChecked) {
+                dot.classList.add('translate-x-4');
+                bg.classList.add('bg-red-500');
+                bg.classList.remove('bg-gray-200');
+            } else {
+                dot.classList.remove('translate-x-4');
+                bg.classList.remove('bg-red-500');
+                bg.classList.add('bg-gray-200');
+            }
+
+            // 隐藏/显示拼音文本
+            const pinyinElements = document.querySelectorAll('.pinyin-text');
+            pinyinElements.forEach(el => {
+                el.style.display = isChecked ? 'block' : 'none';
+            });
+        });
+
+        // 初始化
+        renderTranscript();
+        
+        // 初始化 Toggle 样式
+        const initDot = togglePinyin.parentElement.querySelector('.dot');
+        const initBg = togglePinyin.parentElement.querySelector('.toggle-bg');
+        initDot.classList.add('translate-x-4');
+        initBg.classList.add('bg-red-500');
+        initBg.classList.remove('bg-gray-200');
+
+    </script>
+</body>
+</html>
