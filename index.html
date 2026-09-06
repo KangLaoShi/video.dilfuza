@@ -89,11 +89,10 @@
         </div>
     </main>
 
-    <!-- 交互式词典弹窗 (Tooltip) -->
-    <div id="dictionary-tooltip" class="hidden fixed z-[100] bg-white rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] border border-red-100 p-4 min-w-[160px] transform -translate-x-1/2 transition-opacity pointer-events-none">
-        <div class="text-red-600 font-bold mb-1 text-sm text-center" id="tt-pinyin"></div>
-        <div class="text-gray-800 font-bold text-lg text-center" id="tt-trans"></div>
-        <div class="mt-2 text-[10px] text-gray-400 border-t border-gray-100 pt-2 text-center uppercase tracking-wider">O'zbek tiliga tarjima</div>
+    <!-- 交互式词典弹窗 (Tooltip) - 优化为半透明、小巧的毛玻璃样式 -->
+    <div id="dictionary-tooltip" class="fixed z-[100] bg-gray-800/85 backdrop-blur-md text-white rounded-lg shadow-sm border border-gray-600/50 px-3 py-2 min-w-max transform -translate-x-1/2 pointer-events-none transition-all duration-200 opacity-0 invisible">
+        <div class="text-red-300 font-medium text-[11px] text-center leading-none mb-1.5" id="tt-pinyin"></div>
+        <div class="text-gray-50 font-bold text-sm text-center leading-none" id="tt-trans"></div>
     </div>
 
     <script>
@@ -963,9 +962,7 @@
             bindDictionaryEvents();
         }
 
-        // ==========================================
         // 词典交互逻辑 (弹窗)
-        // ==========================================
         function bindDictionaryEvents() {
             const tooltip = document.getElementById('dictionary-tooltip');
             const pyEl = document.getElementById('tt-pinyin');
@@ -980,23 +977,24 @@
                     pyEl.textContent = py;
                     trEl.textContent = tr;
 
-                    // 计算并设置弹窗位置（在单词正上方）
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    tooltip.style.top = (rect.top + window.scrollY - tooltip.offsetHeight - 10) + 'px';
-                    tooltip.style.left = (rect.left + (rect.width / 2)) + 'px';
+                    // 先移除隐藏状态以便正确计算尺寸
+                    tooltip.classList.remove('opacity-0', 'invisible');
 
-                    tooltip.classList.remove('hidden');
+                    // 计算并设置弹窗位置（在单词正上方，稍微更紧凑一点）
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    tooltip.style.top = (rect.top - tooltip.offsetHeight - 6) + 'px';
+                    tooltip.style.left = (rect.left + (rect.width / 2)) + 'px';
                 });
             });
 
             // 点击页面任意其他地方隐藏弹窗
             document.addEventListener('click', () => {
-                if (tooltip) tooltip.classList.add('hidden');
+                if (tooltip) tooltip.classList.add('opacity-0', 'invisible');
             });
 
             // 滚动字幕框时也隐藏弹窗，避免卡片悬停错位
             container.addEventListener('scroll', () => {
-                if (tooltip) tooltip.classList.add('hidden');
+                if (tooltip) tooltip.classList.add('opacity-0', 'invisible');
             });
         }
 
