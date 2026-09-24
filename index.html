@@ -270,12 +270,6 @@
                 ]
             },
             {
-                start: 37.1, end: 37.1,
-                words: [
-                    { text: "”", start: 37.1, end: 37.1, py: "", tr: "" }
-                ]
-            },
-            {
                 start: 37.1, end: 44.2,
                 words: [
                     { text: "他", start: 37.1, end: 37.4, py: "tā", tr: "u / он" },
@@ -848,7 +842,8 @@
 
             const pinyinElements = document.querySelectorAll('.pinyin-text');
             pinyinElements.forEach(el => {
-                el.style.display = isChecked ? 'block' : 'none';
+                // 修改这里：使用 '' 来清除 inline style，恢复浏览器默认的 ruby-text 排版，而不是用 'block'
+                el.style.display = isChecked ? '' : 'none';
             });
         });
 
