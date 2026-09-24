@@ -21,8 +21,8 @@
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
 
     <!-- 顶部简易导航 -->
-    <header class="bg-white border-b border-gray-200 h-16 flex items-center shrink-0 z-50">
-        <div class="max-w-5xl w-full mx-auto px-4 flex justify-between items-center">
+    <header class="bg-white border-b border-gray-200 h-16 flex items-center shrink-0 z-50 sticky top-0">
+        <div class="max-w-7xl w-full mx-auto px-4 flex justify-between items-center">
             <a href="#" class="text-xl font-bold text-red-600 flex items-center gap-2">
                 <i data-lucide="book-open"></i>
                 <span>康老师中文</span>
@@ -32,20 +32,21 @@
     </header>
 
     <!-- 主体内容区 -->
-    <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 flex flex-col lg:flex-row gap-6">
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col lg:flex-row gap-6 lg:items-start relative">
         
-        <!-- 左侧/上方：视频播放器区域 -->
-        <div class="w-full lg:w-3/5 flex flex-col gap-4">
-            <div class="bg-black rounded-xl overflow-hidden shadow-lg aspect-video relative flex justify-center items-center">
+        <!-- 左侧/上方：视频播放器与详情区域 -->
+        <div class="w-full lg:w-7/12 flex flex-col gap-4">
+            
+            <!-- 优化了竖屏 (Shorts) 视频的自适应容器，去除了无效黑边 -->
+            <div class="bg-black rounded-xl overflow-hidden shadow-lg relative flex justify-center items-center h-[400px] sm:h-[500px] md:h-[600px] lg:h-[650px] w-full">
                 <!-- 添加占位提示：当沙盒拦截视频时，能给用户明确的反馈 -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-6 text-center z-0">
                     <p class="text-sm mb-1">正在加载 YouTube 播放器...</p>
                     <p class="text-xs opacity-75">如果一直黑屏，说明当前的预览沙盒或您的浏览器插件拦截了该视频嵌入。</p>
                 </div>
                 
-                <!-- 使用 youtube-nocookie.com 提高嵌入成功率，避免因跨站 Cookie 被拦截 -->
-                <!-- 更新为 Shorts 视频链接 -->
-                <iframe id="youtube-player" class="absolute inset-y-0 w-full md:w-[56.25%] h-full z-10 mx-auto" 
+                <!-- 视频比例严格限制为 9:16 (aspect-[9/16]) -->
+                <iframe id="youtube-player" class="h-full aspect-[9/16] z-10 rounded-lg shadow-2xl bg-black" 
                         src="https://www.youtube-nocookie.com/embed/DyQsfaef00A?enablejsapi=1&playsinline=1&rel=0" 
                         frameborder="0" 
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
@@ -54,21 +55,39 @@
             </div>
             
             <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <h1 class="text-2xl font-bold mb-2">学习外语的方法与态度</h1>
-                <div class="flex items-center gap-4 text-sm text-gray-500">
+                <h1 class="text-2xl font-bold mb-2 md:text-3xl">学习外语的方法与态度</h1>
+                <div class="flex items-center gap-4 text-sm text-gray-500 mt-2">
                     <span class="bg-blue-50 text-blue-600 px-2 py-1 rounded font-medium">Intermediate (中级)</span>
                     <span><i data-lucide="tag" class="w-4 h-4 inline mr-1"></i>Education (教育)</span>
                 </div>
-                <p class="mt-4 text-gray-600 text-sm leading-relaxed">
+                <p class="mt-4 text-gray-600 text-sm md:text-base leading-relaxed">
                     在这节课中，康老师通过一个学生的笔记故事，分享了学习语言时的正确态度和复习方法。注意听康老师的发音，你可以点击右侧（或下方）的字幕来反复练习某一句！
                 </p>
+                <p class="mt-3 text-gray-500 text-sm leading-relaxed border-t border-gray-50 pt-3">
+                    Ushbu darsda o'qituvchi Kang bir o'quvchining qaydlari haqidagi hikoya orqali til o'rganishdagi to'g'ri yondashuv va takrorlash usullari bilan o'rtoqlashadi. O'qituvchi Kangning talaffuzini diqqat bilan tinglang, istalgan gapni qayta-qayta mashq qilish uchun o'ng tomondagi (yoki pastdagi) subtitrlarga bosishingiz mumkin!
+                </p>
+            </div>
+            
+            <!-- 动态生词列表区域 -->
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex flex-col flex-1">
+                <h2 class="font-bold flex items-center gap-2 mb-4 text-lg border-b border-gray-100 pb-2">
+                    <i data-lucide="book-a" class="w-5 h-5 text-red-600"></i>
+                    生词列表 (Vocabulary)
+                </h2>
+                <!-- 生词列表在电脑端不用限制高度，随左侧流式排版 -->
+                <div class="pr-2">
+                    <ul id="vocab-container" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
+                        <!-- 由 JavaScript 动态生成 -->
+                    </ul>
+                </div>
             </div>
         </div>
 
-        <!-- 右侧/下方：交互式同步字幕区域 -->
-        <div class="w-full lg:w-2/5 flex flex-col h-[600px]">
-            <div class="bg-white rounded-t-xl p-4 border border-gray-100 border-b-0 flex justify-between items-center shadow-sm">
-                <h2 class="font-bold flex items-center gap-2">
+        <!-- 右侧/下方：交互式同步字幕区域 (Sticky 浮动) -->
+        <!-- 移动端固定高度 500px，电脑端高度计算为 屏幕高度 - 边距，且随着滚动悬浮固定 (sticky) -->
+        <div class="w-full lg:w-5/12 flex flex-col h-[500px] lg:h-[calc(100vh-6rem)] lg:sticky lg:top-20 z-40">
+            <div class="bg-white rounded-t-xl p-4 border border-gray-100 border-b-0 flex justify-between items-center shadow-sm shrink-0">
+                <h2 class="font-bold flex items-center gap-2 text-lg">
                     <i data-lucide="align-left" class="w-5 h-5 text-red-600"></i>
                     互动字幕 (Transcript)
                 </h2>
@@ -673,6 +692,38 @@
             }
         ];
 
+        // 整理后的生词列表数据
+        const vocabData = [
+            { zh: "数学", py: "shù xué", tr: "matematika" },
+            { zh: "认真", py: "rèn zhēn", tr: "jiddiy, diqqat bilan" },
+            { zh: "笔记", py: "bǐ jì", tr: "qaydlar, konspekt" },
+            { zh: "清楚", py: "qīng chu", tr: "aniq, tushunarli" },
+            { zh: "黑板", py: "hēi bǎn", tr: "doska" },
+            { zh: "把", py: "bǎ", tr: "obyektni ko‘chirishni bildiradi" },
+            { zh: "作业", py: "zuò yè", tr: "uy vazifasi" },
+            { zh: "遍", py: "biàn", tr: "marta" },
+            { zh: "提高", py: "tí gāo", tr: "yaxshilamoq, oshirmoq" },
+            { zh: "历史", py: "lì shǐ", tr: "tarix" },
+            { zh: "难", py: "nán", tr: "qiyin" },
+            { zh: "要求", py: "yāo qiú", tr: "talab, talab qilmoq" },
+            { zh: "差", py: "chà", tr: "yomon, past" },
+            { zh: "复习", py: "fù xí", tr: "takrorlamoq" },
+            { zh: "外语", py: "wài yǔ", tr: "chet tili" },
+            { zh: "当然", py: "dāng rán", tr: "albatta" },
+            { zh: "遇到", py: "yù dào", tr: "duch kelmoq" },
+            { zh: "办公室", py: "bàn gōng shì", tr: "ofis, idora" },
+            { zh: "页", py: "yè", tr: "sahifa" },
+            { zh: "对话", py: "duì huà", tr: "muloqot, dialog" },
+            { zh: "讲", py: "jiǎng", tr: "gapirmoq, tushuntirmoq" },
+            { zh: "明白", py: "míng bai", tr: "tushunmoq" },
+            { zh: "句", py: "jù", tr: "gap (o‘lchov so‘zi)" },
+            { zh: "句子", py: "jù zi", tr: "gap" },
+            { zh: "年级", py: "nián jí", tr: "sinf, bosqich" },
+            { zh: "一般", py: "yì bān", tr: "odatda, umuman" },
+            { zh: "后年", py: "hòu nián", tr: "keyingi yildan keyingi yil" },
+            { zh: "努力", py: "nǔ lì", tr: "harakat qilmoq, tirishmoq" }
+        ];
+
         const container = document.getElementById('transcript-container');
         let transcriptElements = [];
 
@@ -873,6 +924,26 @@
 
         // 初始化
         renderTranscript();
+        renderVocab(); // 渲染生词列表
+        
+        // 渲染生词列表的函数
+        function renderVocab() {
+            const vocabContainer = document.getElementById('vocab-container');
+            if (!vocabContainer) return;
+            
+            vocabData.forEach((item) => {
+                const li = document.createElement('li');
+                li.className = "flex flex-col bg-gray-50/50 hover:bg-red-50/50 rounded-lg p-3 border border-gray-100 hover:border-red-200 transition-colors shadow-sm cursor-default";
+                li.innerHTML = `
+                    <div class="flex items-baseline justify-between mb-1.5 gap-2">
+                        <span class="text-lg font-bold text-gray-800">${item.zh}</span>
+                        <span class="text-xs font-mono text-gray-500 bg-white px-1.5 py-0.5 rounded border border-gray-200 shadow-sm">${item.py}</span>
+                    </div>
+                    <span class="text-sm text-gray-600 font-medium leading-tight">${item.tr}</span>
+                `;
+                vocabContainer.appendChild(li);
+            });
+        }
         
         // 初始化 Toggle 样式
         const initDot = togglePinyin.parentElement.querySelector('.dot');
