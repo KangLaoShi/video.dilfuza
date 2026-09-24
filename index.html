@@ -45,9 +45,8 @@
                     <p class="text-xs opacity-75">如果一直黑屏，说明当前的预览沙盒或您的浏览器插件拦截了该视频嵌入。</p>
                 </div>
                 
-                <!-- 移除 aspect-[9/16]，使用 absolute inset-0 填满容器 -->
                 <iframe id="youtube-player" class="absolute inset-0 w-full h-full z-10 bg-black" 
-                        src="https://www.youtube-nocookie.com/embed/fUfxiU2wjyk?enablejsapi=1&playsinline=1&rel=0" 
+                        src="https://www.youtube-nocookie.com/embed/i8p6PhqZbd0?enablejsapi=1&playsinline=1&rel=0" 
                         frameborder="0" 
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                         allowfullscreen>
@@ -74,7 +73,6 @@
                     <i data-lucide="book-a" class="w-5 h-5 text-red-600"></i>
                     生词列表 (Vocabulary)
                 </h2>
-                <!-- 生词列表在电脑端不用限制高度，随左侧流式排版 -->
                 <div class="pr-2">
                     <ul id="vocab-container" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
                         <!-- 由 JavaScript 动态生成 -->
@@ -84,7 +82,6 @@
         </div>
 
         <!-- 右侧/下方：交互式同步字幕区域 (Sticky 浮动) -->
-        <!-- 移动端固定高度 500px，电脑端高度计算为 屏幕高度 - 边距，且随着滚动悬浮固定 (sticky) -->
         <div class="w-full lg:w-5/12 flex flex-col h-[500px] lg:h-[calc(100vh-6rem)] lg:sticky lg:top-20 z-40">
             <div class="bg-white rounded-t-xl p-4 border border-gray-100 border-b-0 flex justify-between items-center shadow-sm shrink-0">
                 <h2 class="font-bold flex items-center gap-2 text-lg">
@@ -109,7 +106,7 @@
         </div>
     </main>
 
-    <!-- 交互式词典弹窗 (Tooltip) - 优化为浅蓝色半透明的毛玻璃样式 -->
+    <!-- 交互式词典弹窗 (Tooltip) - 浅蓝色半透明的毛玻璃样式 -->
     <div id="dictionary-tooltip" class="fixed z-[100] bg-blue-50/90 backdrop-blur-md text-gray-800 rounded-lg shadow-md border border-blue-200 px-3 py-2 min-w-max transform -translate-x-1/2 pointer-events-none transition-all duration-200 opacity-0 invisible">
         <div class="text-red-600 font-medium text-[11px] text-center leading-none mb-1.5" id="tt-pinyin"></div>
         <div class="text-gray-900 font-bold text-sm text-center leading-none" id="tt-trans"></div>
@@ -118,662 +115,589 @@
     <script>
         lucide.createIcons();
 
-        // 模拟字幕数据 (更新为提供的新完整数据)
+        const vocabularyData = [
+            { no: 1, text: "数学", py: "shù xué", tr: "matematika" },
+            { no: 2, text: "认真", py: "rèn zhēn", tr: "jiddiy, diqqat bilan" },
+            { no: 3, text: "笔记", py: "bǐ jì", tr: "qaydlar, konspekt" },
+            { no: 4, text: "清楚", py: "qīng chu", tr: "aniq, tushunarli" },
+            { no: 5, text: "黑板", py: "hēi bǎn", tr: "doska" },
+            { no: 6, text: "把", py: "bǎ", tr: "obyektni ko‘chirishni bildiradi" },
+            { no: 7, text: "作业", py: "zuò yè", tr: "uy vazifasi" },
+            { no: 8, text: "遍", py: "biàn", tr: "marta" },
+            { no: 9, text: "提高", py: "tí gāo", tr: "yaxshilamoq, oshirmoq" },
+            { no: 10, text: "历史", py: "lì shǐ", tr: "tarix" },
+            { no: 11, text: "难", py: "nán", tr: "qiyin" },
+            { no: 12, text: "要求", py: "yāo qiú", tr: "talab, talab qilmoq" },
+            { no: 13, text: "差", py: "chà", tr: "yomon, past" },
+            { no: 14, text: "复习", py: "fù xí", tr: "takrorlamoq" },
+            { no: 15, text: "外语", py: "wài yǔ", tr: "chet tili" },
+            { no: 16, text: "当然", py: "dāng rán", tr: "albatta" },
+            { no: 17, text: "遇到", py: "yù dào", tr: "duch kelmoq" },
+            { no: 18, text: "办公室", py: "bàn gōng shì", tr: "ofis, idora" },
+            { no: 19, text: "页", py: "yè", tr: "sahifa" },
+            { no: 20, text: "对话", py: "duì huà", tr: "muloqot, dialog" },
+            { no: 21, text: "讲", py: "jiǎng", tr: "gapirmoq, tushuntirmoq" },
+            { no: 22, text: "明白", py: "míng bai", tr: "tushunmoq" },
+            { no: 23, text: "句", py: "jù", tr: "gap (o‘lchov so‘zi)" },
+            { no: 24, text: "句子", py: "jù zi", tr: "gap" },
+            { no: 25, text: "年级", py: "nián jí", tr: "sinf, bosqich" },
+            { no: 26, text: "一般", py: "yì bān", tr: "odatda, umuman" },
+            { no: 27, text: "后年", py: "hòu nián", tr: "keyingi yildan keyingi yil" },
+            { no: 28, text: "努力", py: "nǔ lì", tr: "harakat qilmoq, tirishmoq" }
+        ];
+
+        const vocabContainer = document.getElementById('vocab-container');
+        vocabularyData.forEach(item => {
+            const li = document.createElement('li');
+            li.className = "flex items-start gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100 hover:border-red-200 hover:bg-red-50 transition-colors group";
+            li.innerHTML = `
+                <div class="shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-600 text-xs font-bold group-hover:bg-red-600 group-hover:text-white transition-colors mt-0.5">
+                    ${item.no}
+                </div>
+                <div class="flex flex-col">
+                    <div class="flex items-end gap-2">
+                        <span class="font-bold text-lg text-gray-900">${item.text}</span>
+                        <span class="text-sm text-gray-500 mb-0.5">${item.py}</span>
+                    </div>
+                    <span class="text-sm text-gray-600 mt-1">${item.tr}</span>
+                </div>
+            `;
+            vocabContainer.appendChild(li);
+        });
+
         const transcriptData = [
             {
                 start: 1.0, end: 5.2,
                 words: [
                     { text: "大家好", start: 1.0, end: 1.8, py: "dà jiā hǎo", tr: "barchaga salom / всем привет" },
                     { text: "欢迎", start: 1.8, end: 2.4, py: "huān yíng", tr: "xush kelibsiz / добро пожаловать" },
-                    { text: "来到", start: 2.4, end: 3.0, py: "lái dào", tr: "-ga / в" },
-                    { text: "康老师", start: 3.0, end: 3.8, py: "Kāng lǎo shī", tr: "Kang o'qituvchining / учителя Кан" },
+                    { text: "来到", start: 2.4, end: 2.9, py: "lái dào", tr: "-ga / в" },
+                    { text: "康老师", start: 2.9, end: 3.8, py: "Kāng lǎo shī", tr: "Kang o'qituvchining / учителя Кан" },
                     { text: "的", start: 3.8, end: 4.1, py: "de", tr: "- / (суффикс)" },
-                    { text: "中文", start: 4.1, end: 4.7, py: "zhōng wén", tr: "xitoy tili / китайский" },
-                    { text: "播客", start: 4.7, end: 5.2, py: "bō kè", tr: "podkastiga / подкаст" },
-                    { text: "。", start: 5.2, end: 5.2, py: "", tr: "" }
+                    { text: "中文", start: 4.1, end: 4.6, py: "zhōng wén", tr: "xitoy tili / китайский" },
+                    { text: "播客", start: 4.6, end: 5.2, py: "bō kè", tr: "podkastiga / подкаст" }
                 ]
             },
             {
-                start: 5.5, end: 9.8,
+                start: 5.2, end: 8.5,
                 words: [
-                    { text: "今天", start: 5.5, end: 6.1, py: "jīn tiān", tr: "bugun / сегодня" },
-                    { text: "我们", start: 6.1, end: 6.7, py: "wǒ men", tr: "biz / мы" },
-                    { text: "来", start: 6.7, end: 7.0, py: "lái", tr: "keling / давайте" },
-                    { text: "聊", start: 7.0, end: 7.2, py: "liáo", tr: "suhbatlashamiz / поговорим" },
-                    { text: "一件", start: 7.2, end: 7.8, py: "yí jiàn", tr: "bitta / об одном" },
-                    { text: "很有意思的", start: 7.8, end: 9.2, py: "hěn yǒu yì si de", tr: "juda qiziqarli / очень интересном" },
-                    { text: "事情", start: 9.2, end: 9.8, py: "shì qing", tr: "narsa / деле" },
-                    { text: "。", start: 9.8, end: 9.8, py: "", tr: "" }
+                    { text: "今天", start: 5.2, end: 5.7, py: "jīn tiān", tr: "bugun / сегодня" },
+                    { text: "我们", start: 5.7, end: 6.2, py: "wǒ men", tr: "biz / мы" },
+                    { text: "来", start: 6.2, end: 6.4, py: "lái", tr: "keling / давайте" },
+                    { text: "聊", start: 6.4, end: 6.6, py: "liáo", tr: "suhbatlashamiz / поговорим" },
+                    { text: "一件", start: 6.6, end: 7.1, py: "yí jiàn", tr: "bitta / об одном" },
+                    { text: "很有意思的", start: 7.1, end: 8.1, py: "hěn yǒu yì si de", tr: "juda qiziqarli / очень интересном" },
+                    { text: "事情", start: 8.1, end: 8.5, py: "shì qing", tr: "narsa / деле" }
                 ]
             },
             {
-                start: 10.1, end: 17.5,
+                start: 8.5, end: 15.0,
                 words: [
-                    { text: "前几天", start: 10.1, end: 10.9, py: "qián jǐ tiān", tr: "bir necha kun oldin / несколько дней назад" },
-                    { text: "，", start: 10.9, end: 10.9, py: "", tr: "" },
-                    { text: "我", start: 10.9, end: 11.2, py: "wǒ", tr: "men / я" },
-                    { text: "在", start: 11.2, end: 11.5, py: "zài", tr: "-da / в" },
-                    { text: "办公室", start: 11.5, end: 12.4, py: "bàn gōng shì", tr: "ofisda / в офисе" },
-                    { text: "整理", start: 12.4, end: 12.9, py: "zhěng lǐ", tr: "tartibga solyapman / приводила в порядок" },
-                    { text: "学生", start: 12.9, end: 13.5, py: "xué shēng", tr: "o'quvchi / студентов" },
-                    { text: "的", start: 13.5, end: 13.8, py: "de", tr: "ning / (суффикс)" },
-                    { text: "作业", start: 13.8, end: 14.3, py: "zuò yè", tr: "vazifasini / домашнюю работу" },
-                    { text: "，", start: 14.3, end: 14.3, py: "", tr: "" },
-                    { text: "看到", start: 14.3, end: 14.9, py: "kàn dào", tr: "ko'rdim / увидела" },
-                    { text: "一个", start: 14.9, end: 15.5, py: "yí gè", tr: "bitta / одного" },
-                    { text: "学生", start: 15.5, end: 16.0, py: "xué shēng", tr: "o'quvchi / студента" },
-                    { text: "的", start: 16.0, end: 16.3, py: "de", tr: "ning / (суффикс)" },
-                    { text: "汉语", start: 16.3, end: 16.9, py: "hàn yǔ", tr: "xitoy tili / китайского" },
-                    { text: "笔记", start: 16.9, end: 17.5, py: "bǐ jì", tr: "daftari / конспекты" },
-                    { text: "。", start: 17.5, end: 17.5, py: "", tr: "" }
+                    { text: "前几天", start: 8.5, end: 9.2, py: "qián jǐ tiān", tr: "bir necha kun oldin / несколько дней назад" },
+                    { text: "我", start: 9.2, end: 9.4, py: "wǒ", tr: "men / я" },
+                    { text: "在", start: 9.4, end: 9.6, py: "zài", tr: "-da / в" },
+                    { text: "办公室", start: 9.6, end: 10.3, py: "bàn gōng shì", tr: "ofisda / в офисе" },
+                    { text: "整理", start: 10.3, end: 10.8, py: "zhěng lǐ", tr: "tartibga solyapman / приводила в порядок" },
+                    { text: "学生", start: 10.8, end: 11.3, py: "xué shēng", tr: "o'quvchi / студентов" },
+                    { text: "的", start: 11.3, end: 11.6, py: "de", tr: "ning / (суффикс)" },
+                    { text: "作业", start: 11.6, end: 12.1, py: "zuò yè", tr: "vazifasini / домашнюю работу" },
+                    { text: "看到", start: 12.1, end: 12.6, py: "kàn dào", tr: "ko'rdim / увидела" },
+                    { text: "一个", start: 12.6, end: 13.2, py: "yí gè", tr: "bitta / одного" },
+                    { text: "学生", start: 13.2, end: 13.7, py: "xué shēng", tr: "o'quvchi / студента" },
+                    { text: "汉语", start: 13.9, end: 14.5, py: "hàn yǔ", tr: "xitoy tili / китайского" },
+                    { text: "笔记", start: 14.5, end: 15.0, py: "bǐ jì", tr: "daftari / конспекты" }
                 ]
             },
             {
-                start: 17.8, end: 26.0,
+                start: 15.0, end: 23.1,
                 words: [
-                    { text: "他", start: 17.8, end: 18.0, py: "tā", tr: "uning / его" },
-                    { text: "的", start: 18.0, end: 18.3, py: "de", tr: "ning / (суффикс)" },
-                    { text: "笔记", start: 18.3, end: 18.9, py: "bǐ jì", tr: "qaydlari / конспекты" },
-                    { text: "做得", start: 18.9, end: 19.5, py: "zuò de", tr: "qilingan / сделаны" },
-                    { text: "特别", start: 19.5, end: 20.0, py: "tè bié", tr: "juda / особенно" },
-                    { text: "认真", start: 20.0, end: 20.6, py: "rèn zhēn", tr: "diqqat bilan / внимательно" },
-                    { text: "，", start: 20.6, end: 20.6, py: "", tr: "" },
-                    { text: "黑板上", start: 20.6, end: 21.4, py: "hēi bǎn shàng", tr: "doskadagi / на доске" },
-                    { text: "的", start: 21.4, end: 21.7, py: "de", tr: "ning / (суффикс)" },
-                    { text: "内容", start: 21.7, end: 22.3, py: "nèi róng", tr: "mazmunni / содержание" },
-                    { text: "，", start: 22.3, end: 22.3, py: "", tr: "" },
-                    { text: "他", start: 22.3, end: 22.6, py: "tā", tr: "u / он" },
-                    { text: "都", start: 22.6, end: 22.8, py: "dōu", tr: "hammasini / всё" },
-                    { text: "写下来", start: 22.8, end: 23.7, py: "xiě xià lái", tr: "yozib olgan / записал" },
-                    { text: "，", start: 23.7, end: 23.7, py: "", tr: "" },
-                    { text: "而且", start: 23.7, end: 24.3, py: "ér qiě", tr: "va / и" },
-                    { text: "写得", start: 24.3, end: 24.8, py: "xiě de", tr: "yozilgan / написано" },
-                    { text: "非常", start: 24.8, end: 25.4, py: "fēi cháng", tr: "juda / очень" },
-                    { text: "清楚", start: 25.4, end: 26.0, py: "qīng chu", tr: "aniq / ясно" },
-                    { text: "。", start: 26.0, end: 26.0, py: "", tr: "" }
+                    { text: "他", start: 15.0, end: 15.3, py: "tā", tr: "uning / его" },
+                    { text: "的", start: 15.3, end: 15.6, py: "de", tr: "ning / (суффикс)" },
+                    { text: "笔记", start: 15.6, end: 16.1, py: "bǐ jì", tr: "qaydlari / конспекты" },
+                    { text: "做得", start: 16.1, end: 16.7, py: "zuò de", tr: "qilingan / сделаны" },
+                    { text: "特别", start: 16.7, end: 17.2, py: "tè bié", tr: "juda / особенно" },
+                    { text: "认真", start: 17.2, end: 17.8, py: "rèn zhēn", tr: "diqqat bilan / внимательно" },
+                    { text: "黑板上", start: 17.8, end: 18.6, py: "hēi bǎn shàng", tr: "doskadagi / на доске" },
+                    { text: "的", start: 18.6, end: 18.9, py: "de", tr: "ning / (суффикс)" },
+                    { text: "内容", start: 18.9, end: 19.4, py: "nèi róng", tr: "mazmunni / содержание" },
+                    { text: "他", start: 19.4, end: 19.7, py: "tā", tr: "u / он" },
+                    { text: "都", start: 19.7, end: 20.0, py: "dōu", tr: "hammasini / всё" },
+                    { text: "写下来", start: 20.0, end: 20.8, py: "xiě xià lái", tr: "yozib olgan / записал" },
+                    { text: "而且", start: 20.8, end: 21.4, py: "ér qiě", tr: "va / и" },
+                    { text: "写得", start: 21.4, end: 21.9, py: "xiě de", tr: "yozilgan / написано" },
+                    { text: "非常", start: 21.9, end: 22.5, py: "fēi cháng", tr: "juda / очень" },
+                    { text: "清楚", start: 22.5, end: 23.1, py: "qīng chu", tr: "aniq / ясно" }
                 ]
             },
             {
-                start: 26.3, end: 37.9,
+                start: 23.1, end: 34.2,
                 words: [
-                    { text: "我", start: 26.3, end: 26.5, py: "wǒ", tr: "men / я" },
-                    { text: "打开", start: 26.5, end: 27.1, py: "dǎ kāi", tr: "ochib / открыла" },
-                    { text: "他", start: 27.1, end: 27.4, py: "tā", tr: "uning / его" },
-                    { text: "的", start: 27.4, end: 27.7, py: "de", tr: "ning / (суффикс)" },
-                    { text: "作业", start: 27.7, end: 28.2, py: "zuò yè", tr: "vazifasini / домашнюю работу" },
-                    { text: "一看", start: 28.2, end: 28.8, py: "yí kàn", tr: "ko'rsam / и посмотрела" },
-                    { text: "，", start: 28.8, end: 28.8, py: "", tr: "" },
-                    { text: "发现", start: 28.8, end: 29.4, py: "fā xiàn", tr: "bildim / обнаружила" },
-                    { text: "一页", start: 29.4, end: 29.9, py: "yí yè", tr: "bir sahifada / на одной странице" },
-                    { text: "上", start: 29.9, end: 30.2, py: "shàng", tr: "-da / на" },
-                    { text: "写了", start: 30.2, end: 30.8, py: "xiě le", tr: "yozilgan / написано" },
-                    { text: "很多", start: 30.8, end: 31.4, py: "hěn duō", tr: "ko'p / много" },
-                    { text: "句子", start: 31.4, end: 31.9, py: "jù zi", tr: "gaplar / предложений" },
-                    { text: "，", start: 31.9, end: 31.9, py: "", tr: "" },
-                    { text: "有的", start: 31.9, end: 32.5, py: "yǒu de", tr: "ba'zi / некоторые" },
-                    { text: "句子", start: 32.5, end: 33.1, py: "jù zi", tr: "gaplar / предложения" },
-                    { text: "写得", start: 33.1, end: 33.6, py: "xiě de", tr: "yozilgan / написаны" },
-                    { text: "很好", start: 33.6, end: 34.2, py: "hěn hǎo", tr: "juda yaxshi / очень хорошо" },
-                    { text: "，", start: 34.2, end: 34.2, py: "", tr: "" },
-                    { text: "但是", start: 34.2, end: 34.8, py: "dàn shì", tr: "lekin / но" },
-                    { text: "有的", start: 34.8, end: 35.3, py: "yǒu de", tr: "ba'zi / некоторые" },
-                    { text: "句子", start: 35.3, end: 35.9, py: "jù zi", tr: "gaplar / предложения" },
-                    { text: "还是", start: 35.9, end: 36.5, py: "hái shì", tr: "baribir / всё же" },
-                    { text: "有", start: 36.5, end: 36.7, py: "yǒu", tr: "bor / имеют" },
-                    { text: "一点", start: 36.7, end: 37.3, py: "yì diǎn", tr: "ozgina / немного" },
-                    { text: "问题", start: 37.3, end: 37.9, py: "wèn tí", tr: "xato / проблем" },
-                    { text: "。", start: 37.9, end: 37.9, py: "", tr: "" }
+                    { text: "我", start: 23.1, end: 23.3, py: "wǒ", tr: "men / я" },
+                    { text: "打开", start: 23.3, end: 23.9, py: "dǎ kāi", tr: "ochib / открыла" },
+                    { text: "他", start: 23.9, end: 24.2, py: "tā", tr: "uning / его" },
+                    { text: "的", start: 24.2, end: 24.4, py: "de", tr: "ning / (суффикс)" },
+                    { text: "作业", start: 24.4, end: 25.0, py: "zuò yè", tr: "vazifasini / домашнюю работу" },
+                    { text: "一看", start: 25.0, end: 25.5, py: "yí kàn", tr: "ko'rsam / и посмотрела" },
+                    { text: "发现", start: 25.5, end: 26.1, py: "fā xiàn", tr: "bildim / обнаружила" },
+                    { text: "一页", start: 26.1, end: 26.6, py: "yí yè", tr: "bir sahifada / на одной странице" },
+                    { text: "上", start: 26.6, end: 26.8, py: "shàng", tr: "-da / на" },
+                    { text: "写了", start: 26.8, end: 27.4, py: "xiě le", tr: "yozilgan / написано" },
+                    { text: "很多", start: 27.4, end: 27.9, py: "hěn duō", tr: "ko'p / много" },
+                    { text: "句子", start: 27.9, end: 28.4, py: "jù zi", tr: "gaplar / предложений" },
+                    { text: "有的", start: 28.4, end: 28.9, py: "yǒu de", tr: "ba'zi / некоторые" },
+                    { text: "句子", start: 28.9, end: 29.5, py: "jù zi", tr: "gaplar / предложения" },
+                    { text: "写得", start: 29.5, end: 30.0, py: "xiě de", tr: "yozilgan / написаны" },
+                    { text: "很好", start: 30.0, end: 30.6, py: "hěn hǎo", tr: "juda yaxshi / очень хорошо" },
+                    { text: "但是", start: 30.6, end: 31.1, py: "dàn shì", tr: "lekin / но" },
+                    { text: "有的", start: 31.1, end: 31.7, py: "yǒu de", tr: "ba'zi / некоторые" },
+                    { text: "句子", start: 31.7, end: 32.2, py: "jù zi", tr: "gaplar / предложения" },
+                    { text: "还是", start: 32.2, end: 32.8, py: "hái shì", tr: "baribir / всё же" },
+                    { text: "有", start: 32.8, end: 33.1, py: "yǒu", tr: "bor / имеют" },
+                    { text: "一点", start: 33.1, end: 33.6, py: "yì diǎn", tr: "ozgina / немного" },
+                    { text: "问题", start: 33.6, end: 34.2, py: "wèn tí", tr: "xato / проблем" }
                 ]
             },
             {
-                start: 38.2, end: 41.3,
+                start: 34.2, end: 37.1,
                 words: [
-                    { text: "我", start: 38.2, end: 38.5, py: "wǒ", tr: "men / я" },
-                    { text: "问", start: 38.5, end: 38.7, py: "wèn", tr: "so'radim / спросила" },
-                    { text: "他", start: 38.7, end: 39.0, py: "tā", tr: "undan / его" },
-                    { text: "：", start: 39.0, end: 39.0, py: "", tr: "" },
-                    { text: "“", start: 39.0, end: 39.0, py: "", tr: "" },
-                    { text: "你", start: 39.0, end: 39.3, py: "nǐ", tr: "sen / ты" },
-                    { text: "平时", start: 39.3, end: 39.9, py: "píng shí", tr: "odatda / обычно" },
-                    { text: "怎么", start: 39.9, end: 40.4, py: "zěn me", tr: "qanday / как" },
-                    { text: "复习", start: 40.4, end: 41.0, py: "fù xí", tr: "takrorlaysan / повторяешь" },
-                    { text: "的", start: 41.0, end: 41.3, py: "de", tr: "- / (суффикс)" },
-                    { text: "？", start: 41.3, end: 41.3, py: "", tr: "" }
+                    { text: "我", start: 34.2, end: 34.4, py: "wǒ", tr: "men / я" },
+                    { text: "问", start: 34.4, end: 34.7, py: "wèn", tr: "so'radim / спросила" },
+                    { text: "他", start: 34.7, end: 35.0, py: "tā", tr: "undan / его" },
+                    { text: "你", start: 35.0, end: 35.3, py: "nǐ", tr: "sen / ты" },
+                    { text: "平时", start: 35.3, end: 35.8, py: "píng shí", tr: "odatda / обычно" },
+                    { text: "怎么", start: 35.8, end: 36.3, py: "zěn me", tr: "qanday / как" },
+                    { text: "复习", start: 36.3, end: 36.8, py: "fù xí", tr: "takrorlaysan / повторяешь" }
                 ]
             },
             {
-                start: 41.6, end: 41.6,
+                start: 37.1, end: 37.1,
                 words: [
-                    { text: "”", start: 41.6, end: 41.6, py: "", tr: "" }
+                    { text: "”", start: 37.1, end: 37.1, py: "", tr: "" }
                 ]
             },
             {
-                start: 41.9, end: 49.5,
+                start: 37.1, end: 44.2,
                 words: [
-                    { text: "他", start: 41.9, end: 42.2, py: "tā", tr: "u / он" },
-                    { text: "说", start: 42.2, end: 42.5, py: "shuō", tr: "dedi / сказал" },
-                    { text: "，", start: 42.5, end: 42.5, py: "", tr: "" },
-                    { text: "他", start: 42.5, end: 42.7, py: "tā", tr: "u / он" },
-                    { text: "一般", start: 42.7, end: 43.3, py: "yì bān", tr: "odatda / обычно" },
-                    { text: "会", start: 43.3, end: 43.6, py: "huì", tr: "-adi / будет" },
-                    { text: "把", start: 43.6, end: 43.9, py: "bǎ", tr: "-ni / (показ. объекта)" },
-                    { text: "老师", start: 43.9, end: 44.4, py: "lǎo shī", tr: "o'qituvchi / учитель" },
-                    { text: "讲过", start: 44.4, end: 45.0, py: "jiǎng guò", tr: "aytgan / рассказывал" },
-                    { text: "的", start: 45.0, end: 45.3, py: "de", tr: "ning / (суффикс)" },
-                    { text: "内容", start: 45.3, end: 45.8, py: "nèi róng", tr: "mazmunni / материал" },
-                    { text: "再", start: 45.8, end: 46.1, py: "zài", tr: "yana / еще раз" },
-                    { text: "看", start: 46.1, end: 46.4, py: "kàn", tr: "ko'rib chiqadi / просматривает" },
-                    { text: "一遍", start: 46.4, end: 47.0, py: "yí biàn", tr: "bir marta / один раз" },
-                    { text: "，", start: 47.0, end: 47.0, py: "", tr: "" },
-                    { text: "有时候", start: 47.0, end: 47.8, py: "yǒu shí hou", tr: "ba'zida / иногда" },
-                    { text: "还", start: 47.8, end: 48.1, py: "hái", tr: "yana / еще" },
-                    { text: "会", start: 48.1, end: 48.4, py: "huì", tr: "-adi / будет" },
-                    { text: "读", start: 48.4, end: 48.7, py: "dú", tr: "o'qiydi / читает" },
-                    { text: "两三遍", start: 48.7, end: 49.5, py: "liǎng sān biàn", tr: "ikki-uch marta / два-три раза" },
-                    { text: "。", start: 49.5, end: 49.5, py: "", tr: "" }
+                    { text: "他", start: 37.1, end: 37.4, py: "tā", tr: "u / он" },
+                    { text: "说", start: 37.4, end: 37.6, py: "shuō", tr: "dedi / сказал" },
+                    { text: "他", start: 37.6, end: 37.9, py: "tā", tr: "u / он" },
+                    { text: "一般", start: 37.9, end: 38.4, py: "yì bān", tr: "odatda / обычно" },
+                    { text: "会", start: 38.4, end: 38.7, py: "huì", tr: "-adi / будет" },
+                    { text: "把", start: 38.7, end: 38.9, py: "bǎ", tr: "-ni / (показ. объекта)" },
+                    { text: "老师", start: 38.9, end: 39.5, py: "lǎo shī", tr: "o'qituvchi / учитель" },
+                    { text: "讲过", start: 39.5, end: 40.0, py: "jiǎng guò", tr: "aytgan / рассказывал" },
+                    { text: "的", start: 40.0, end: 40.3, py: "de", tr: "ning / (суффикс)" },
+                    { text: "内容", start: 40.3, end: 40.8, py: "nèi róng", tr: "mazmunni / материал" },
+                    { text: "再", start: 40.8, end: 41.1, py: "zài", tr: "yana / еще раз" },
+                    { text: "看", start: 41.1, end: 41.3, py: "kàn", tr: "ko'rib chiqadi / просматривает" },
+                    { text: "一遍", start: 41.3, end: 41.8, py: "yí biàn", tr: "bir marta / один раз" },
+                    { text: "有时候", start: 41.8, end: 42.6, py: "yǒu shí hou", tr: "ba'zida / иногда" },
+                    { text: "还", start: 42.6, end: 42.9, py: "hái", tr: "yana / еще" },
+                    { text: "会", start: 42.9, end: 43.2, py: "huì", tr: "-adi / будет" },
+                    { text: "读", start: 43.2, end: 43.4, py: "dú", tr: "o'qiydi / читает" },
+                    { text: "两三遍", start: 43.4, end: 44.2, py: "liǎng sān biàn", tr: "ikki-uch marta / два-три раза" }
                 ]
             },
             {
-                start: 49.8, end: 52.4,
+                start: 44.2, end: 46.6,
                 words: [
-                    { text: "我", start: 49.8, end: 50.1, py: "wǒ", tr: "men / я" },
-                    { text: "觉得", start: 50.1, end: 50.7, py: "jué de", tr: "o'ylaymanki / думаю" },
-                    { text: "这个", start: 50.7, end: 51.2, py: "zhè ge", tr: "bu / этот" },
-                    { text: "方法", start: 51.2, end: 51.8, py: "fāng fǎ", tr: "usul / метод" },
-                    { text: "很好", start: 51.8, end: 52.4, py: "hěn hǎo", tr: "juda yaxshi / очень хороший" },
-                    { text: "。", start: 52.4, end: 52.4, py: "", tr: "" }
+                    { text: "我", start: 44.2, end: 44.5, py: "wǒ", tr: "men / я" },
+                    { text: "觉得", start: 44.5, end: 45.0, py: "jué de", tr: "o'ylaymanki / думаю" },
+                    { text: "这个", start: 45.0, end: 45.5, py: "zhè ge", tr: "bu / этот" },
+                    { text: "方法", start: 45.5, end: 46.1, py: "fāng fǎ", tr: "usul / метод" },
+                    { text: "很好", start: 46.1, end: 46.6, py: "hěn hǎo", tr: "juda yaxshi / очень хороший" }
                 ]
             },
             {
-                start: 52.7, end: 58.6,
+                start: 46.6, end: 53.1,
                 words: [
-                    { text: "因为", start: 52.7, end: 53.2, py: "yīn wèi", tr: "chunki / потому что" },
-                    { text: "学习", start: 53.2, end: 53.8, py: "xué xí", tr: "o'rganish / учебы" },
-                    { text: "的", start: 53.8, end: 54.1, py: "de", tr: "ning / (суффикс)" },
-                    { text: "时候", start: 54.1, end: 54.7, py: "shí hou", tr: "paytida / во время" },
-                    { text: "，", start: 54.7, end: 54.7, py: "", tr: "" },
-                    { text: "如果", start: 54.7, end: 55.2, py: "rú guǒ", tr: "agar / если" },
-                    { text: "只是", start: 55.2, end: 55.8, py: "zhǐ shì", tr: "faqat / только" },
-                    { text: "听", start: 55.8, end: 56.1, py: "tīng", tr: "eshitsang / слушать" },
-                    { text: "一遍", start: 56.1, end: 56.6, py: "yí biàn", tr: "bir marta / один раз" },
-                    { text: "，", start: 56.6, end: 56.6, py: "", tr: "" },
-                    { text: "可能", start: 56.6, end: 57.2, py: "kě néng", tr: "ehtimol / возможно" },
-                    { text: "很快", start: 57.2, end: 57.8, py: "hěn kuài", tr: "tez / быстро" },
-                    { text: "就", start: 57.8, end: 58.1, py: "jiù", tr: "-oq / сразу" },
-                    { text: "忘了", start: 58.1, end: 58.6, py: "wàng le", tr: "unutasiz / забудешь" },
-                    { text: "。", start: 58.6, end: 58.6, py: "", tr: "" }
+                    { text: "因为", start: 46.6, end: 47.1, py: "yīn wèi", tr: "chunki / потому что" },
+                    { text: "学习", start: 47.1, end: 47.6, py: "xué xí", tr: "o'rganish / учебы" },
+                    { text: "的", start: 47.6, end: 47.9, py: "de", tr: "ning / (суффикс)" },
+                    { text: "时候", start: 47.9, end: 48.4, py: "shí hou", tr: "paytida / во время" },
+                    { text: "如果", start: 48.4, end: 48.9, py: "rú guǒ", tr: "agar / если" },
+                    { text: "只是", start: 48.9, end: 49.5, py: "zhǐ shì", tr: "faqat / только" },
+                    { text: "听", start: 49.5, end: 49.7, py: "tīng", tr: "eshitsang / слушать" },
+                    { text: "一遍", start: 49.7, end: 50.3, py: "yí biàn", tr: "bir marta / один раз" },
+                    { text: "看", start: 50.3, end: 50.6, py: "kàn", tr: "ko'rsang / смотреть" },
+                    { text: "一遍", start: 50.6, end: 51.1, py: "yí biàn", tr: "bir marta / один раз" },
+                    { text: "可能", start: 51.1, end: 51.7, py: "kě néng", tr: "ehtimol / возможно" },
+                    { text: "很快", start: 51.7, end: 52.2, py: "hěn kuài", tr: "tez / быстро" },
+                    { text: "就", start: 52.2, end: 52.5, py: "jiù", tr: "-oq / сразу" },
+                    { text: "忘了", start: 52.5, end: 53.1, py: "wàng le", tr: "unutasiz / забудешь" }
                 ]
             },
             {
-                start: 58.9, end: 66.3,
+                start: 53.1, end: 60.3,
                 words: [
-                    { text: "但是", start: 58.9, end: 59.5, py: "dàn shì", tr: "lekin / но" },
-                    { text: "，", start: 59.5, end: 59.5, py: "", tr: "" },
-                    { text: "如果", start: 59.5, end: 60.1, py: "rú guǒ", tr: "agar / если" },
-                    { text: "你", start: 60.1, end: 60.3, py: "nǐ", tr: "sen / ты" },
-                    { text: "认真地", start: 60.3, end: 61.2, py: "rèn zhēn de", tr: "diqqat bilan / внимательно" },
-                    { text: "复习", start: 61.2, end: 61.8, py: "fù xí", tr: "takrorlasang / повторяешь" },
-                    { text: "，", start: 61.8, end: 61.8, py: "", tr: "" },
-                    { text: "把", start: 61.8, end: 62.0, py: "bǎ", tr: "-ni / (показ. объекта)" },
-                    { text: "重要", start: 62.0, end: 62.6, py: "zhòng yào", tr: "muhim / важное" },
-                    { text: "的", start: 62.6, end: 62.9, py: "de", tr: "- / (суффикс)" },
-                    { text: "内容", start: 62.9, end: 63.5, py: "nèi róng", tr: "mazmunni / содержание" },
-                    { text: "再", start: 63.5, end: 63.7, py: "zài", tr: "yana / еще" },
-                    { text: "看", start: 63.7, end: 64.0, py: "kàn", tr: "ko'rsang / посмотришь" },
-                    { text: "几遍", start: 64.0, end: 64.6, py: "jǐ biàn", tr: "bir necha marta / несколько раз" },
-                    { text: "，", start: 64.6, end: 64.6, py: "", tr: "" },
-                    { text: "就", start: 64.6, end: 64.9, py: "jiù", tr: "shunda / то" },
-                    { text: "会", start: 64.9, end: 65.2, py: "huì", tr: "-san / будет" },
-                    { text: "慢慢", start: 65.2, end: 65.7, py: "màn màn", tr: "sekin-asta / постепенно" },
-                    { text: "记住", start: 65.7, end: 66.3, py: "jì zhù", tr: "eslab qolasan / запомнишь" },
-                    { text: "。", start: 66.3, end: 66.3, py: "", tr: "" }
+                    { text: "但是", start: 53.1, end: 53.6, py: "dàn shì", tr: "lekin / но" },
+                    { text: "如果", start: 53.6, end: 54.2, py: "rú guǒ", tr: "agar / если" },
+                    { text: "你", start: 54.2, end: 54.4, py: "nǐ", tr: "sen / ты" },
+                    { text: "认真地", start: 54.4, end: 55.3, py: "rèn zhēn de", tr: "diqqat bilan / внимательно" },
+                    { text: "复习", start: 55.3, end: 55.8, py: "fù xí", tr: "takrorlasang / повторяешь" },
+                    { text: "把", start: 55.8, end: 56.1, py: "bǎ", tr: "-ni / (показ. объекта)" },
+                    { text: "重要", start: 56.1, end: 56.7, py: "zhòng yào", tr: "muhim / важное" },
+                    { text: "的", start: 56.7, end: 56.9, py: "de", tr: "- / (суффикс)" },
+                    { text: "内容", start: 56.9, end: 57.5, py: "nèi róng", tr: "mazmunni / содержание" },
+                    { text: "再", start: 57.5, end: 57.8, py: "zài", tr: "yana / еще" },
+                    { text: "看", start: 57.8, end: 58.1, py: "kàn", tr: "ko'rsang / посмотришь" },
+                    { text: "几遍", start: 58.1, end: 58.6, py: "jǐ biàn", tr: "bir necha marta / несколько раз" },
+                    { text: "就", start: 58.6, end: 58.9, py: "jiù", tr: "shunda / то" },
+                    { text: "会", start: 58.9, end: 59.2, py: "huì", tr: "-san / будет" },
+                    { text: "慢慢", start: 59.2, end: 59.7, py: "màn màn", tr: "sekin-asta / постепенно" },
+                    { text: "记住", start: 59.7, end: 60.3, py: "jì zhù", tr: "eslab qolasan / запомнишь" }
                 ]
             },
             {
-                start: 66.6, end: 73.1,
+                start: 60.3, end: 66.6,
                 words: [
-                    { text: "后来", start: 66.6, end: 67.1, py: "hòu lái", tr: "keyin / потом" },
-                    { text: "我", start: 67.1, end: 67.4, py: "wǒ", tr: "men / я" },
-                    { text: "又", start: 67.4, end: 67.7, py: "yòu", tr: "yana / еще" },
-                    { text: "发现", start: 67.7, end: 68.3, py: "fā xiàn", tr: "bildim / обнаружила" },
-                    { text: "，", start: 68.3, end: 68.3, py: "", tr: "" },
-                    { text: "他", start: 68.3, end: 68.6, py: "tā", tr: "uning / его" },
-                    { text: "的", start: 68.6, end: 68.8, py: "de", tr: "- / (суффикс)" },
-                    { text: "历史", start: 68.8, end: 69.4, py: "lì shǐ", tr: "tarix / история" },
-                    { text: "成绩", start: 69.4, end: 70.0, py: "chéng jì", tr: "baholari / оценки" },
-                    { text: "很好", start: 70.0, end: 70.5, py: "hěn hǎo", tr: "juda yaxshi / очень хорошие" },
-                    { text: "，", start: 70.5, end: 70.5, py: "", tr: "" },
-                    { text: "但是", start: 70.5, end: 71.1, py: "dàn shì", tr: "lekin / но" },
-                    { text: "数学", start: 71.1, end: 71.7, py: "shù xué", tr: "matematika / математика" },
-                    { text: "成绩", start: 71.7, end: 72.2, py: "chéng jì", tr: "baholari / оценки" },
-                    { text: "比较", start: 72.2, end: 72.8, py: "bǐ jiào", tr: "nisbatan / сравнительно" },
-                    { text: "差", start: 72.8, end: 73.1, py: "chà", tr: "yomon / плохие" },
-                    { text: "。", start: 73.1, end: 73.1, py: "", tr: "" }
+                    { text: "后来", start: 60.3, end: 60.8, py: "hòu lái", tr: "keyin / потом" },
+                    { text: "我", start: 60.8, end: 61.1, py: "wǒ", tr: "men / я" },
+                    { text: "又", start: 61.1, end: 61.4, py: "yòu", tr: "yana / еще" },
+                    { text: "发现", start: 61.4, end: 61.9, py: "fā xiàn", tr: "bildim / обнаружила" },
+                    { text: "他", start: 61.9, end: 62.2, py: "tā", tr: "uning / его" },
+                    { text: "的", start: 62.2, end: 62.5, py: "de", tr: "- / (суффикс)" },
+                    { text: "历史", start: 62.5, end: 63.1, py: "lì shǐ", tr: "tarix / история" },
+                    { text: "成绩", start: 63.1, end: 63.6, py: "chéng jì", tr: "baholari / оценки" },
+                    { text: "很好", start: 63.6, end: 64.2, py: "hěn hǎo", tr: "juda yaxshi / очень хорошие" },
+                    { text: "但是", start: 64.2, end: 64.7, py: "dàn shì", tr: "lekin / но" },
+                    { text: "数学", start: 64.7, end: 65.3, py: "shù xué", tr: "matematika / математика" },
+                    { text: "成绩", start: 65.3, end: 65.8, py: "chéng jì", tr: "baholari / оценки" },
+                    { text: "比较", start: 65.8, end: 66.3, py: "bǐ jiào", tr: "nisbatan / сравнительно" },
+                    { text: "差", start: 66.3, end: 66.6, py: "chà", tr: "yomon / плохие" }
                 ]
             },
             {
-                start: 73.4, end: 76.2,
+                start: 66.6, end: 69.2,
                 words: [
-                    { text: "他", start: 73.4, end: 73.7, py: "tā", tr: "u / он" },
-                    { text: "说", start: 73.7, end: 74.0, py: "shuō", tr: "dedi / сказал" },
-                    { text: "，", start: 74.0, end: 74.0, py: "", tr: "" },
-                    { text: "他", start: 74.0, end: 74.2, py: "tā", tr: "u / он" },
-                    { text: "觉得", start: 74.2, end: 74.8, py: "jué de", tr: "o'ylaydi / думает" },
-                    { text: "数学", start: 74.8, end: 75.4, py: "shù xué", tr: "matematika / математика" },
-                    { text: "太", start: 75.4, end: 75.7, py: "tài", tr: "juda / слишком" },
-                    { text: "难", start: 75.7, end: 75.9, py: "nán", tr: "qiyin / сложная" },
-                    { text: "了", start: 75.9, end: 76.2, py: "le", tr: "- / (частица)" },
-                    { text: "。", start: 76.2, end: 76.2, py: "", tr: "" }
+                    { text: "他", start: 66.6, end: 66.8, py: "tā", tr: "u / он" },
+                    { text: "说", start: 66.8, end: 67.1, py: "shuō", tr: "dedi / сказал" },
+                    { text: "他", start: 67.1, end: 67.4, py: "tā", tr: "u / он" },
+                    { text: "觉得", start: 67.4, end: 67.9, py: "jué de", tr: "o'ylaydi / думает" },
+                    { text: "数学", start: 67.9, end: 68.4, py: "shù xué", tr: "matematika / математика" },
+                    { text: "太", start: 68.4, end: 68.7, py: "tài", tr: "juda / слишком" },
+                    { text: "难", start: 68.7, end: 68.9, py: "nán", tr: "qiyin / сложная" },
+                    { text: "了", start: 68.9, end: 69.2, py: "le", tr: "- / (частица)" }
                 ]
             },
             {
-                start: 76.5, end: 79.9,
+                start: 69.2, end: 72.4,
                 words: [
-                    { text: "其实", start: 76.5, end: 77.1, py: "qí shí", tr: "aslida / на самом деле" },
-                    { text: "我", start: 77.1, end: 77.4, py: "wǒ", tr: "men / я" },
-                    { text: "觉得", start: 77.4, end: 77.9, py: "jué de", tr: "o'ylayman / думаю" },
-                    { text: "，", start: 77.9, end: 77.9, py: "", tr: "" },
-                    { text: "学习", start: 77.9, end: 78.5, py: "xué xí", tr: "o'rganish / изучение" },
-                    { text: "什么", start: 78.5, end: 79.1, py: "shén me", tr: "nima / чего-либо" },
-                    { text: "都", start: 79.1, end: 79.4, py: "dōu", tr: "hammasi / всё" },
-                    { text: "一样", start: 79.4, end: 79.9, py: "yí yàng", tr: "bir xil / одинаково" },
-                    { text: "。", start: 79.9, end: 79.9, py: "", tr: "" }
+                    { text: "其实", start: 69.2, end: 69.7, py: "qí shí", tr: "aslida / на самом деле" },
+                    { text: "我", start: 69.7, end: 70.0, py: "wǒ", tr: "men / я" },
+                    { text: "觉得", start: 70.0, end: 70.5, py: "jué de", tr: "o'ylayman / думаю" },
+                    { text: "学习", start: 70.5, end: 71.1, py: "xué xí", tr: "o'rganish / изучение" },
+                    { text: "什么", start: 71.1, end: 71.6, py: "shén me", tr: "nima / чего-либо" },
+                    { text: "都", start: 71.6, end: 71.8, py: "dōu", tr: "hammasi / всё" },
+                    { text: "一样", start: 71.8, end: 72.4, py: "yí yàng", tr: "bir xil / одинаково" }
                 ]
             },
             {
-                start: 80.2, end: 83.6,
+                start: 72.4, end: 75.5,
                 words: [
-                    { text: "遇到", start: 80.2, end: 80.8, py: "yù dào", tr: "duch kelganda / сталкиваясь с" },
-                    { text: "难", start: 80.8, end: 81.1, py: "nán", tr: "qiyin / трудными" },
-                    { text: "的", start: 81.1, end: 81.4, py: "de", tr: "- / (суффикс)" },
-                    { text: "问题", start: 81.4, end: 81.9, py: "wèn tí", tr: "muammolar / проблемами" },
-                    { text: "，", start: 81.9, end: 81.9, py: "", tr: "" },
-                    { text: "不要", start: 81.9, end: 82.5, py: "bú yào", tr: "kerak emas / не нужно" },
-                    { text: "马上", start: 82.5, end: 83.1, py: "mǎ shàng", tr: "darhol / сразу" },
-                    { text: "放弃", start: 83.1, end: 83.6, py: "fàng qì", tr: "taslim bo'lish / сдаваться" },
-                    { text: "。", start: 83.6, end: 83.6, py: "", tr: "" }
+                    { text: "遇到", start: 72.4, end: 72.9, py: "yù dào", tr: "duch kelganda / сталкиваясь с" },
+                    { text: "难", start: 72.9, end: 73.2, py: "nán", tr: "qiyin / трудными" },
+                    { text: "的", start: 73.2, end: 73.4, py: "de", tr: "- / (суффикс)" },
+                    { text: "问题", start: 73.4, end: 73.9, py: "wèn tí", tr: "muammolar / проблемами" },
+                    { text: "不要", start: 73.9, end: 74.5, py: "bú yào", tr: "kerak emas / не нужно" },
+                    { text: "马上", start: 74.5, end: 75.0, py: "mǎ shàng", tr: "darhol / сразу" },
+                    { text: "放弃", start: 75.0, end: 75.5, py: "fàng qì", tr: "taslim bo'lish / сдаваться" }
                 ]
             },
             {
-                start: 83.9, end: 91.0,
+                start: 75.5, end: 82.2,
                 words: [
-                    { text: "如果", start: 83.9, end: 84.5, py: "rú guǒ", tr: "agar / если" },
-                    { text: "有", start: 84.5, end: 84.8, py: "yǒu", tr: "bo'lsa / есть" },
-                    { text: "不明白", start: 84.8, end: 85.6, py: "bù míng bái", tr: "tushunarsiz / непонятные" },
-                    { text: "的", start: 85.6, end: 85.9, py: "de", tr: "- / (суффикс)" },
-                    { text: "地方", start: 85.9, end: 86.5, py: "dì fang", tr: "joylar / места" },
-                    { text: "，", start: 86.5, end: 86.5, py: "", tr: "" },
-                    { text: "可以", start: 86.5, end: 87.0, py: "kě yǐ", tr: "mumkin / можно" },
-                    { text: "去", start: 87.0, end: 87.3, py: "qù", tr: "borish / пойти" },
-                    { text: "办公室", start: 87.3, end: 88.2, py: "bàn gōng shì", tr: "ofisga / в офис" },
-                    { text: "找", start: 88.2, end: 88.4, py: "zhǎo", tr: "izlab / искать" },
-                    { text: "老师", start: 88.4, end: 89.0, py: "lǎo shī", tr: "o'qituvchini / учителя" },
-                    { text: "，", start: 89.0, end: 89.0, py: "", tr: "" },
-                    { text: "让", start: 89.0, end: 89.3, py: "ràng", tr: "so'rash / попросить" },
-                    { text: "老师", start: 89.3, end: 89.9, py: "lǎo shī", tr: "o'qituvchidan / учителя" },
-                    { text: "再", start: 89.9, end: 90.1, py: "zài", tr: "yana / еще раз" },
-                    { text: "讲", start: 90.1, end: 90.4, py: "jiǎng", tr: "tushuntirishni / объяснить" },
-                    { text: "一次", start: 90.4, end: 91.0, py: "yí cì", tr: "bir marta / один раз" },
-                    { text: "。", start: 91.0, end: 91.0, py: "", tr: "" }
+                    { text: "如果", start: 75.5, end: 76.1, py: "rú guǒ", tr: "agar / если" },
+                    { text: "有", start: 76.1, end: 76.3, py: "yǒu", tr: "bo'lsa / есть" },
+                    { text: "不明白", start: 76.3, end: 77.1, py: "bù míng bái", tr: "tushunarsiz / непонятные" },
+                    { text: "的", start: 77.1, end: 77.4, py: "de", tr: "- / (суффикс)" },
+                    { text: "地方", start: 77.4, end: 77.9, py: "dì fang", tr: "joylar / места" },
+                    { text: "可以", start: 77.9, end: 78.4, py: "kě yǐ", tr: "mumkin / можно" },
+                    { text: "去", start: 78.4, end: 78.7, py: "qù", tr: "borish / пойти" },
+                    { text: "办公室", start: 78.7, end: 79.5, py: "bàn gōng shì", tr: "ofisga / в офис" },
+                    { text: "找", start: 79.5, end: 79.7, py: "zhǎo", tr: "izlab / искать" },
+                    { text: "老师", start: 79.7, end: 80.3, py: "lǎo shī", tr: "o'qituvchini / учителя" },
+                    { text: "让", start: 80.3, end: 80.6, py: "ràng", tr: "so'rash / попросить" },
+                    { text: "老师", start: 80.6, end: 81.1, py: "lǎo shī", tr: "o'qituvchidan / учителя" },
+                    { text: "再", start: 81.1, end: 81.4, py: "zài", tr: "yana / еще раз" },
+                    { text: "讲", start: 81.4, end: 81.7, py: "jiǎng", tr: "tushuntirishni / объяснить" },
+                    { text: "一次", start: 81.7, end: 82.2, py: "yí cì", tr: "bir marta / один раз" }
                 ]
             },
             {
-                start: 91.3, end: 93.8,
+                start: 82.2, end: 84.7,
                 words: [
-                    { text: "听不明白", start: 91.3, end: 92.4, py: "tīng bù míng bái", tr: "tushunmasang / не понял" },
-                    { text: "，", start: 92.4, end: 92.4, py: "", tr: "" },
-                    { text: "就", start: 92.4, end: 92.7, py: "jiù", tr: "shunda / то" },
-                    { text: "再", start: 92.7, end: 93.0, py: "zài", tr: "yana / еще" },
-                    { text: "听", start: 93.0, end: 93.3, py: "tīng", tr: "eshit / послушай" },
-                    { text: "一遍", start: 93.3, end: 93.8, py: "yí biàn", tr: "bir marta / один раз" },
-                    { text: "。", start: 93.8, end: 93.8, py: "", tr: "" }
+                    { text: "听不明白", start: 82.2, end: 83.3, py: "tīng bù míng bái", tr: "tushunmasang / не понял" },
+                    { text: "就", start: 83.3, end: 83.6, py: "jiù", tr: "shunda / то" },
+                    { text: "再", start: 83.6, end: 83.9, py: "zài", tr: "yana / еще" },
+                    { text: "听", start: 83.9, end: 84.2, py: "tīng", tr: "eshit / послушай" },
+                    { text: "一遍", start: 84.2, end: 84.7, py: "yí biàn", tr: "bir marta / один раз" }
                 ]
             },
             {
-                start: 94.1, end: 97.0,
+                start: 84.7, end: 87.1,
                 words: [
-                    { text: "不会", start: 94.1, end: 94.7, py: "bú huì", tr: "bilmasang / не знаешь" },
-                    { text: "的", start: 94.7, end: 95.0, py: "de", tr: "- / (суффикс)" },
-                    { text: "句子", start: 95.0, end: 95.6, py: "jù zi", tr: "gapni / предложение" },
-                    { text: "，", start: 95.6, end: 95.6, py: "", tr: "" },
-                    { text: "就", start: 95.6, end: 95.8, py: "jiù", tr: "shunda / то" },
-                    { text: "多", start: 95.8, end: 96.1, py: "duō", tr: "ko'proq / больше" },
-                    { text: "读", start: 96.1, end: 96.4, py: "dú", tr: "o'qi / читай" },
-                    { text: "几遍", start: 96.4, end: 97.0, py: "jǐ biàn", tr: "bir necha marta / несколько раз" },
-                    { text: "。", start: 97.0, end: 97.0, py: "", tr: "" }
+                    { text: "不会", start: 84.7, end: 85.2, py: "bú huì", tr: "bilmasang / не знаешь" },
+                    { text: "的", start: 85.2, end: 85.5, py: "de", tr: "- / (суффикс)" },
+                    { text: "句子", start: 85.5, end: 85.9, py: "jù zi", tr: "gapni / предложение" },
+                    { text: "就", start: 85.9, end: 86.2, py: "jiù", tr: "shunda / то" },
+                    { text: "多", start: 86.2, end: 86.4, py: "duō", tr: "ko'proq / больше" },
+                    { text: "读", start: 86.4, end: 86.6, py: "dú", tr: "o'qi / читай" },
+                    { text: "几遍", start: 86.6, end: 87.1, py: "jǐ biàn", tr: "bir necha marta / несколько раз" }
                 ]
             },
             {
-                start: 97.3, end: 101.5,
+                start: 87.1, end: 90.8,
                 words: [
-                    { text: "这样", start: 97.3, end: 97.8, py: "zhè yàng", tr: "shunday qilib / так" },
-                    { text: "慢慢", start: 97.8, end: 98.4, py: "màn màn", tr: "sekin-asta / постепенно" },
-                    { text: "练习", start: 98.4, end: 99.0, py: "liàn xí", tr: "mashq qilsang / тренируясь" },
-                    { text: "，", start: 99.0, end: 99.0, py: "", tr: "" },
-                    { text: "自己", start: 99.0, end: 99.5, py: "zì jǐ", tr: "o'zingning / твой" },
-                    { text: "的", start: 99.5, end: 99.8, py: "de", tr: "- / (суффикс)" },
-                    { text: "水平", start: 99.8, end: 100.4, py: "shuǐ píng", tr: "darajang / уровень" },
-                    { text: "就", start: 100.4, end: 100.7, py: "jiù", tr: "shunda / то" },
-                    { text: "会", start: 100.7, end: 101.0, py: "huì", tr: "-adi / (вспом. глагол)" },
-                    { text: "提高", start: 101.0, end: 101.5, py: "tí gāo", tr: "ko'tariladi / повысится" },
-                    { text: "。", start: 101.5, end: 101.5, py: "", tr: "" }
+                    { text: "这样", start: 87.1, end: 87.6, py: "zhè yàng", tr: "shunday qilib / так" },
+                    { text: "慢慢", start: 87.6, end: 88.1, py: "màn màn", tr: "sekin-asta / постепенно" },
+                    { text: "练习", start: 88.1, end: 88.5, py: "liàn xí", tr: "mashq qilsang / тренируясь" },
+                    { text: "自己", start: 88.5, end: 89.0, py: "zì jǐ", tr: "o'zingning / твой" },
+                    { text: "的", start: 89.0, end: 89.2, py: "de", tr: "- / (суффикс)" },
+                    { text: "水平", start: 89.2, end: 89.8, py: "shuǐ píng", tr: "darajang / уровень" },
+                    { text: "就", start: 89.8, end: 90.0, py: "jiù", tr: "shunda / то" },
+                    { text: "会", start: 90.0, end: 90.2, py: "huì", tr: "-adi / (вспом. глагол)" },
+                    { text: "提高", start: 90.2, end: 90.8, py: "tí gāo", tr: "ko'tariladi / повысится" }
                 ]
             },
             {
-                start: 101.8, end: 105.8,
+                start: 90.8, end: 94.2,
                 words: [
-                    { text: "我", start: 101.8, end: 102.1, py: "wǒ", tr: "men / я" },
-                    { text: "自己", start: 102.1, end: 102.7, py: "zì jǐ", tr: "o'zim / сам" },
-                    { text: "学习", start: 102.7, end: 103.2, py: "xué xí", tr: "o'rganayotganda / при изучении" },
-                    { text: "外语", start: 103.2, end: 103.8, py: "wài yǔ", tr: "chet tilini / иностранного языка" },
-                    { text: "的", start: 103.8, end: 104.1, py: "de", tr: "- / (суффикс)" },
-                    { text: "时候", start: 104.1, end: 104.7, py: "shí hou", tr: "paytida / во время" },
-                    { text: "也", start: 104.7, end: 104.9, py: "yě", tr: "ham / тоже" },
-                    { text: "是", start: 104.9, end: 105.2, py: "shì", tr: "-dir / было" },
-                    { text: "这样", start: 105.2, end: 105.8, py: "zhè yàng", tr: "shunday / так" },
-                    { text: "。", start: 105.8, end: 105.8, py: "", tr: "" }
+                    { text: "我", start: 90.8, end: 91.0, py: "wǒ", tr: "men / я" },
+                    { text: "自己", start: 91.0, end: 91.5, py: "zì jǐ", tr: "o'zim / сам" },
+                    { text: "学习", start: 91.5, end: 92.0, py: "xué xí", tr: "o'rganayotganda / при изучении" },
+                    { text: "外语", start: 92.0, end: 92.5, py: "wài yǔ", tr: "chet tilini / иностранного языка" },
+                    { text: "的", start: 92.5, end: 92.8, py: "de", tr: "- / (суффикс)" },
+                    { text: "时候", start: 92.8, end: 93.2, py: "shí hou", tr: "paytida / во время" },
+                    { text: "也", start: 93.2, end: 93.5, py: "yě", tr: "ham / тоже" },
+                    { text: "是", start: 93.5, end: 93.8, py: "shì", tr: "-dir / было" },
+                    { text: "这样", start: 93.8, end: 94.2, py: "zhè yàng", tr: "shunday / так" }
                 ]
             },
             {
-                start: 106.1, end: 111.5,
+                start: 94.2, end: 98.4,
                 words: [
-                    { text: "刚开始", start: 106.1, end: 106.9, py: "gāng kāi shǐ", tr: "boshida / в самом начале" },
-                    { text: "学习", start: 106.9, end: 107.5, py: "xué xí", tr: "o'rganayotganda / изучения" },
-                    { text: "乌兹别克语", start: 107.5, end: 108.9, py: "Wū zī bié kè yǔ", tr: "o'zbek tilini / узбекского языка" },
-                    { text: "的", start: 108.9, end: 109.2, py: "de", tr: "- / (суффикс)" },
-                    { text: "时候", start: 109.2, end: 109.8, py: "shí hou", tr: "paytida / во время" },
-                    { text: "，", start: 109.8, end: 109.8, py: "", tr: "" },
-                    { text: "我", start: 109.8, end: 110.1, py: "wǒ", tr: "men / я" },
-                    { text: "也", start: 110.1, end: 110.3, py: "yě", tr: "ham / тоже" },
-                    { text: "觉得", start: 110.3, end: 110.9, py: "jué de", tr: "o'ylardim / думал" },
-                    { text: "很", start: 110.9, end: 111.2, py: "hěn", tr: "juda / очень" },
-                    { text: "难", start: 111.2, end: 111.5, py: "nán", tr: "qiyin / сложно" },
-                    { text: "。", start: 111.5, end: 111.5, py: "", tr: "" }
+                    { text: "刚开始", start: 94.2, end: 94.9, py: "gāng kāi shǐ", tr: "boshida / в самом начале" },
+                    { text: "学习", start: 94.9, end: 95.3, py: "xué xí", tr: "o'rganayotganda / изучения" },
+                    { text: "乌兹别克语", start: 95.3, end: 96.4, py: "Wū zī bié kè yǔ", tr: "o'zbek tilini / узбекского языка" },
+                    { text: "的", start: 96.4, end: 96.7, py: "de", tr: "- / (суффикс)" },
+                    { text: "时候", start: 96.7, end: 97.1, py: "shí hou", tr: "paytida / во время" },
+                    { text: "我", start: 97.1, end: 97.3, py: "wǒ", tr: "men / я" },
+                    { text: "也", start: 97.3, end: 97.6, py: "yě", tr: "ham / тоже" },
+                    { text: "觉得", start: 97.6, end: 98.0, py: "jué de", tr: "o'ylardim / думал" },
+                    { text: "很", start: 98.0, end: 98.2, py: "hěn", tr: "juda / очень" },
+                    { text: "难", start: 98.2, end: 98.4, py: "nán", tr: "qiyin / сложно" }
                 ]
             },
             {
-                start: 111.8, end: 117.7,
+                start: 98.4, end: 103.5,
                 words: [
-                    { text: "特别是", start: 111.8, end: 112.6, py: "tè bié shì", tr: "ayniqsa / особенно" },
-                    { text: "遇到", start: 112.6, end: 113.2, py: "yù dào", tr: "duch kelganda / когда встречал" },
-                    { text: "一些", start: 113.2, end: 113.7, py: "yì xiē", tr: "ba'zi / некоторые" },
-                    { text: "新", start: 113.7, end: 114.0, py: "xīn", tr: "yangi / новые" },
-                    { text: "的", start: 114.0, end: 114.3, py: "de", tr: "- / (суффикс)" },
-                    { text: "词", start: 114.3, end: 114.6, py: "cí", tr: "so'zlar / слова" },
-                    { text: "和", start: 114.6, end: 114.9, py: "hé", tr: "va / и" },
-                    { text: "新", start: 114.9, end: 115.2, py: "xīn", tr: "yangi / новые" },
-                    { text: "的", start: 115.2, end: 115.4, py: "de", tr: "- / (суффикс)" },
-                    { text: "句子", start: 115.4, end: 116.0, py: "jù zi", tr: "gaplar / предложения" },
-                    { text: "，", start: 116.0, end: 116.0, py: "", tr: "" },
-                    { text: "我", start: 116.0, end: 116.3, py: "wǒ", tr: "men / я" },
-                    { text: "经常", start: 116.3, end: 116.9, py: "jīng cháng", tr: "tez-tez / часто" },
-                    { text: "不明白", start: 116.9, end: 117.7, py: "bù míng bái", tr: "tushunmasdim / не понимал" },
-                    { text: "。", start: 117.7, end: 117.7, py: "", tr: "" }
+                    { text: "特别是", start: 98.4, end: 99.1, py: "tè bié shì", tr: "ayniqsa / особенно" },
+                    { text: "遇到", start: 99.1, end: 99.6, py: "yù dào", tr: "duch kelganda / когда встречал" },
+                    { text: "一些", start: 99.6, end: 100.0, py: "yì xiē", tr: "ba'zi / некоторые" },
+                    { text: "新", start: 100.0, end: 100.2, py: "xīn", tr: "yangi / новые" },
+                    { text: "的", start: 100.2, end: 100.4, py: "de", tr: "- / (суффикс)" },
+                    { text: "词", start: 100.4, end: 100.7, py: "cí", tr: "so'zlar / слова" },
+                    { text: "和", start: 100.7, end: 100.9, py: "hé", tr: "va / и" },
+                    { text: "新", start: 100.9, end: 101.1, py: "xīn", tr: "yangi / новые" },
+                    { text: "的", start: 101.1, end: 101.3, py: "de", tr: "- / (суффикс)" },
+                    { text: "句子", start: 101.3, end: 101.8, py: "jù zi", tr: "gaplar / предложения" },
+                    { text: "我", start: 101.8, end: 102.0, py: "wǒ", tr: "men / я" },
+                    { text: "经常", start: 102.0, end: 102.6, py: "jīng cháng", tr: "tez-tez / часто" },
+                    { text: "不明白", start: 102.6, end: 103.5, py: "bù míng bái", tr: "tushunmasdim / не понимал" }
                 ]
             },
             {
-                start: 118.0, end: 121.7,
+                start: 103.5, end: 107.2,
                 words: [
-                    { text: "但是", start: 118.0, end: 118.6, py: "dàn shì", tr: "lekin / но" },
-                    { text: "我", start: 118.6, end: 118.9, py: "wǒ", tr: "men / я" },
-                    { text: "告诉", start: 118.9, end: 119.4, py: "gào su", tr: "aytardim / говорил" },
-                    { text: "自己", start: 119.4, end: 120.0, py: "zì jǐ", tr: "o'zimga / себе" },
-                    { text: "：", start: 120.0, end: 120.0, py: "", tr: "" },
-                    { text: "没关系", start: 120.0, end: 120.8, py: "méi guān xi", tr: "hech qisi yo'q / ничего страшного" },
-                    { text: "，", start: 120.8, end: 120.8, py: "", tr: "" },
-                    { text: "慢慢来", start: 120.8, end: 121.7, py: "màn màn lái", tr: "shoshilma / не торопись" },
-                    { text: "。", start: 121.7, end: 121.7, py: "", tr: "" }
+                    { text: "但是", start: 103.5, end: 104.1, py: "dàn shì", tr: "lekin / но" },
+                    { text: "我", start: 104.1, end: 104.4, py: "wǒ", tr: "men / я" },
+                    { text: "告诉", start: 104.4, end: 104.9, py: "gào su", tr: "aytardim / говорил" },
+                    { text: "自己", start: 104.9, end: 105.5, py: "zì jǐ", tr: "o'zimga / себе" },
+                    { text: "没关系", start: 105.5, end: 106.4, py: "méi guān xi", tr: "hech qisi yo'q / ничего страшного" },
+                    { text: "慢慢来", start: 106.4, end: 107.2, py: "màn màn lái", tr: "shoshilma / не торопись" }
                 ]
             },
             {
-                start: 122.0, end: 124.8,
+                start: 107.2, end: 109.8,
                 words: [
-                    { text: "认真", start: 122.0, end: 122.6, py: "rèn zhēn", tr: "diqqat bilan / внимательно" },
-                    { text: "听", start: 122.6, end: 122.8, py: "tīng", tr: "eshit / слушай" },
-                    { text: "，", start: 122.8, end: 122.8, py: "", tr: "" },
-                    { text: "认真", start: 122.8, end: 123.4, py: "rèn zhēn", tr: "diqqat bilan / внимательно" },
-                    { text: "记", start: 123.4, end: 123.7, py: "jì", tr: "yozib ol / записывай" },
-                    { text: "，", start: 123.7, end: 123.7, py: "", tr: "" },
-                    { text: "认真", start: 123.7, end: 124.3, py: "rèn zhēn", tr: "diqqat bilan / внимательно" },
-                    { text: "复习", start: 124.3, end: 124.8, py: "fù xí", tr: "takrorla / повторяй" },
-                    { text: "。", start: 124.8, end: 124.8, py: "", tr: "" }
+                    { text: "认真", start: 107.2, end: 107.8, py: "rèn zhēn", tr: "diqqat bilan / внимательно" },
+                    { text: "听", start: 107.8, end: 108.0, py: "tīng", tr: "eshit / слушай" },
+                    { text: "认真", start: 108.0, end: 108.5, py: "rèn zhēn", tr: "diqqat bilan / внимательно" },
+                    { text: "记", start: 108.5, end: 108.8, py: "jì", tr: "yozib ol / записывай" },
+                    { text: "认真", start: 108.8, end: 109.2, py: "rèn zhēn", tr: "diqqat bilan / внимательно" },
+                    { text: "复习", start: 109.2, end: 109.8, py: "fù xí", tr: "takrorla / повторяй" }
                 ]
             },
             {
-                start: 125.1, end: 128.2,
+                start: 109.8, end: 112.7,
                 words: [
-                    { text: "只要", start: 125.1, end: 125.7, py: "zhǐ yào", tr: "agar / если только" },
-                    { text: "努力", start: 125.7, end: 126.3, py: "nǔ lì", tr: "harakat qilsang / будешь стараться" },
-                    { text: "，", start: 126.3, end: 126.3, py: "", tr: "" },
-                    { text: "就", start: 126.3, end: 126.5, py: "jiù", tr: "-oq / то" },
-                    { text: "一定", start: 126.5, end: 127.1, py: "yí dìng", tr: "albatta / обязательно" },
-                    { text: "会", start: 127.1, end: 127.4, py: "huì", tr: "-adi / (вспом. глагол)" },
-                    { text: "有", start: 127.4, end: 127.7, py: "yǒu", tr: "bo'ladi / будет" },
-                    { text: "提高", start: 127.7, end: 128.2, py: "tí gāo", tr: "o'sish / прогресс" },
-                    { text: "。", start: 128.2, end: 128.2, py: "", tr: "" }
+                    { text: "只要", start: 109.8, end: 110.2, py: "zhǐ yào", tr: "agar / если только" },
+                    { text: "努力", start: 110.2, end: 110.8, py: "nǔ lì", tr: "harakat qilsang / будешь стараться" },
+                    { text: "就", start: 110.8, end: 111.0, py: "jiù", tr: "-oq / то" },
+                    { text: "一定", start: 111.0, end: 111.6, py: "yí dìng", tr: "albatta / обязательно" },
+                    { text: "会", start: 111.6, end: 111.8, py: "huì", tr: "-adi / (вспом. глагол)" },
+                    { text: "有", start: 111.8, end: 112.1, py: "yǒu", tr: "bo'ladi / будет" },
+                    { text: "提高", start: 112.1, end: 112.7, py: "tí gāo", tr: "o'sish / прогресс" }
                 ]
             },
             {
-                start: 128.5, end: 132.2,
+                start: 112.7, end: 116.3,
                 words: [
-                    { text: "现在", start: 128.5, end: 129.1, py: "xiàn zài", tr: "hozir / сейчас" },
-                    { text: "想一想", start: 129.1, end: 130.0, py: "xiǎng yì xiǎng", tr: "o'ylab ko'rsam / если подумать" },
-                    { text: "，", start: 130.0, end: 130.0, py: "", tr: "" },
-                    { text: "时间", start: 130.0, end: 130.5, py: "shí jiān", tr: "vaqt / время" },
-                    { text: "真的", start: 130.5, end: 131.1, py: "zhēn de", tr: "haqiqatan ham / действительно" },
-                    { text: "过得", start: 131.1, end: 131.7, py: "guò de", tr: "o'tadi / летит" },
-                    { text: "很快", start: 131.7, end: 132.2, py: "hěn kuài", tr: "tez / быстро" },
-                    { text: "。", start: 132.2, end: 132.2, py: "", tr: "" }
+                    { text: "现在", start: 112.7, end: 113.2, py: "xiàn zài", tr: "hozir / сейчас" },
+                    { text: "想一想", start: 113.2, end: 114.1, py: "xiǎng yì xiǎng", tr: "o'ylab ko'rsam / если подумать" },
+                    { text: "时间", start: 114.1, end: 114.6, py: "shí jiān", tr: "vaqt / время" },
+                    { text: "真的", start: 114.6, end: 115.2, py: "zhēn de", tr: "haqiqatan ham / действительно" },
+                    { text: "过得", start: 115.2, end: 115.7, py: "guò de", tr: "o'tadi / летит" },
+                    { text: "很快", start: 115.7, end: 116.3, py: "hěn kuài", tr: "tez / быстро" }
                 ]
             },
             {
-                start: 132.5, end: 139.6,
+                start: 116.3, end: 123.1,
                 words: [
-                    { text: "学生", start: 132.5, end: 133.1, py: "xué shēng", tr: "o'quvchi / ученики" },
-                    { text: "从", start: 133.1, end: 133.4, py: "cóng", tr: "-dan / от" },
-                    { text: "一年级", start: 133.4, end: 134.2, py: "yì nián jí", tr: "1-sinf / 1-го класса" },
-                    { text: "到", start: 134.2, end: 134.5, py: "dào", tr: "-gacha / до" },
-                    { text: "二年级", start: 134.5, end: 135.3, py: "èr nián jí", tr: "2-sinf / 2-го класса" },
-                    { text: "，", start: 135.3, end: 135.3, py: "", tr: "" },
-                    { text: "再", start: 135.3, end: 135.6, py: "zài", tr: "keyin / затем" },
-                    { text: "到", start: 135.6, end: 135.9, py: "dào", tr: "-gacha / до" },
-                    { text: "三年级", start: 135.9, end: 136.8, py: "sān nián jí", tr: "3-sinf / 3-го класса" },
-                    { text: "、", start: 136.8, end: 136.8, py: "", tr: "" },
-                    { text: "四年级", start: 136.8, end: 137.6, py: "sì nián jí", tr: "4-sinf / 4-го класса" },
-                    { text: "，", start: 137.6, end: 137.6, py: "", tr: "" },
-                    { text: "一年一年地", start: 137.6, end: 139.0, py: "yì nián yì nián de", tr: "yildan yilga / из года в год" },
-                    { text: "长大", start: 139.0, end: 139.6, py: "zhǎng dà", tr: "katta bo'lishadi / растут" },
-                    { text: "。", start: 139.6, end: 139.6, py: "", tr: "" }
+                    { text: "学生", start: 116.3, end: 116.8, py: "xué shēng", tr: "o'quvchi / ученики" },
+                    { text: "从", start: 116.8, end: 117.1, py: "cóng", tr: "-dan / от" },
+                    { text: "一年级", start: 117.1, end: 117.8, py: "yì nián jí", tr: "1-sinf / 1-го класса" },
+                    { text: "到", start: 117.8, end: 118.1, py: "dào", tr: "-gacha / до" },
+                    { text: "二年级", start: 118.1, end: 118.9, py: "èr nián jí", tr: "2-sinf / 2-го класса" },
+                    { text: "再", start: 118.9, end: 119.2, py: "zài", tr: "keyin / затем" },
+                    { text: "到", start: 119.2, end: 119.4, py: "dào", tr: "-gacha / до" },
+                    { text: "三年级", start: 119.4, end: 120.2, py: "sān nián jí", tr: "3-sinf / 3-го класса" },
+                    { text: "四年级", start: 120.2, end: 121.0, py: "sì nián jí", tr: "4-sinf / 4-го класса" },
+                    { text: "一年一年地", start: 121.0, end: 122.5, py: "yì nián yì nián de", tr: "yildan yilga / из года в год" },
+                    { text: "长大", start: 122.5, end: 123.1, py: "zhǎng dà", tr: "katta bo'lishadi / растут" }
                 ]
             },
             {
-                start: 139.9, end: 146.1,
+                start: 123.1, end: 129.2,
                 words: [
-                    { text: "今年", start: 139.9, end: 140.5, py: "jīn nián", tr: "bu yil / в этом году" },
-                    { text: "觉得", start: 140.5, end: 141.0, py: "jué de", tr: "tuyulgan / кажутся" },
-                    { text: "很", start: 141.0, end: 141.3, py: "hěn", tr: "juda / очень" },
-                    { text: "难", start: 141.3, end: 141.6, py: "nán", tr: "qiyin / трудными" },
-                    { text: "的", start: 141.6, end: 141.9, py: "de", tr: "- / (суффикс)" },
-                    { text: "事情", start: 141.9, end: 142.4, py: "shì qing", tr: "narsalar / вещи" },
-                    { text: "，", start: 142.4, end: 142.4, py: "", tr: "" },
-                    { text: "也许", start: 142.4, end: 143.0, py: "yě xǔ", tr: "ehtimol / возможно" },
-                    { text: "到了", start: 143.0, end: 143.6, py: "dào le", tr: "yetib borganda / наступлении" },
-                    { text: "后年", start: 143.6, end: 144.1, py: "hòu nián", tr: "keyingi yili / через год" },
-                    { text: "，", start: 144.1, end: 144.1, py: "", tr: "" },
-                    { text: "就", start: 144.1, end: 144.4, py: "jiù", tr: "shunda / то" },
-                    { text: "会", start: 144.4, end: 144.7, py: "huì", tr: "-adi / (вспом. глагол)" },
-                    { text: "觉得", start: 144.7, end: 145.3, py: "jué de", tr: "tuyuladi / покажутся" },
-                    { text: "很", start: 145.3, end: 145.6, py: "hěn", tr: "juda / очень" },
-                    { text: "简单", start: 145.6, end: 146.1, py: "jiǎn dān", tr: "oson / простыми" },
-                    { text: "。", start: 146.1, end: 146.1, py: "", tr: "" }
+                    { text: "今年", start: 123.1, end: 123.6, py: "jīn nián", tr: "bu yil / в этом году" },
+                    { text: "觉得", start: 123.6, end: 124.2, py: "jué de", tr: "tuyulgan / кажутся" },
+                    { text: "很", start: 124.2, end: 124.5, py: "hěn", tr: "juda / очень" },
+                    { text: "难", start: 124.5, end: 124.8, py: "nán", tr: "qiyin / трудными" },
+                    { text: "事情", start: 125.1, end: 125.7, py: "shì qing", tr: "narsalar / вещи" },
+                    { text: "也许", start: 125.7, end: 126.3, py: "yě xǔ", tr: "ehtimol / возможно" },
+                    { text: "到了", start: 126.3, end: 126.8, py: "dào le", tr: "yetib borganda / наступлении" },
+                    { text: "后年", start: 126.8, end: 127.3, py: "hòu nián", tr: "keyingi yili / через год" },
+                    { text: "就", start: 127.3, end: 127.6, py: "jiù", tr: "shunda / то" },
+                    { text: "会", start: 127.6, end: 127.8, py: "huì", tr: "-adi / (вспом. глагол)" },
+                    { text: "觉得", start: 127.8, end: 128.4, py: "jué de", tr: "tuyuladi / покажутся" },
+                    { text: "很", start: 128.4, end: 128.6, py: "hěn", tr: "juda / очень" },
+                    { text: "简单", start: 128.6, end: 129.2, py: "jiǎn dān", tr: "oson / простыми" }
                 ]
             },
             {
-                start: 146.4, end: 156.0,
+                start: 129.2, end: 138.4,
                 words: [
-                    { text: "所以", start: 146.4, end: 147.0, py: "suǒ yǐ", tr: "shuning uchun / поэтому" },
-                    { text: "，", start: 147.0, end: 147.0, py: "", tr: "" },
-                    { text: "不管是", start: 147.0, end: 147.8, py: "bù guǎn shì", tr: "qat'i nazar / будь то" },
-                    { text: "数学", start: 147.8, end: 148.4, py: "shù xué", tr: "matematika / математика" },
-                    { text: "、", start: 148.4, end: 148.4, py: "", tr: "" },
-                    { text: "历史", start: 148.4, end: 149.0, py: "lì shǐ", tr: "tarix / история" },
-                    { text: "，", start: 149.0, end: 149.0, py: "", tr: "" },
-                    { text: "还是", start: 149.0, end: 149.5, py: "hái shì", tr: "yoki / или" },
-                    { text: "外语", start: 149.5, end: 150.1, py: "wài yǔ", tr: "chet tili / иностранный язык" },
-                    { text: "，", start: 150.1, end: 150.1, py: "", tr: "" },
-                    { text: "最重要", start: 150.1, end: 151.0, py: "zuì zhòng yào", tr: "eng muhim / самое главное" },
-                    { text: "的", start: 151.0, end: 151.2, py: "de", tr: "- / (суффикс)" },
-                    { text: "不是", start: 151.2, end: 151.8, py: "bú shì", tr: "emas / не" },
-                    { text: "你", start: 151.8, end: 152.1, py: "nǐ", tr: "sen / то" },
-                    { text: "现在", start: 152.1, end: 152.7, py: "xiàn zài", tr: "hozir / сейчас" },
-                    { text: "有", start: 152.7, end: 152.9, py: "yǒu", tr: "qanchalik / насколько" },
-                    { text: "多", start: 152.9, end: 153.2, py: "duō", tr: "ko'p / много" },
-                    { text: "好", start: 153.2, end: 153.5, py: "hǎo", tr: "yaxshi / хорош" },
-                    { text: "，", start: 153.5, end: 153.5, py: "", tr: "" },
-                    { text: "而是", start: 153.5, end: 154.1, py: "ér shì", tr: "balki / а то" },
-                    { text: "你", start: 154.1, end: 154.4, py: "nǐ", tr: "sen / ты" },
-                    { text: "愿不愿意", start: 154.4, end: 155.5, py: "yuàn bu yuàn yì", tr: "xohlaysanmi / хочешь ли" },
-                    { text: "努力", start: 155.5, end: 156.0, py: "nǔ lì", tr: "harakat qilishni / стараться" },
-                    { text: "。", start: 156.0, end: 156.0, py: "", tr: "" }
+                    { text: "所以", start: 129.2, end: 129.7, py: "suǒ yǐ", tr: "shuning uchun / поэтому" },
+                    { text: "不管是", start: 129.7, end: 130.5, py: "bù guǎn shì", tr: "qat'i nazar / будь то" },
+                    { text: "数学", start: 130.5, end: 131.0, py: "shù xué", tr: "matematika / математика" },
+                    { text: "历史", start: 131.0, end: 131.6, py: "lì shǐ", tr: "tarix / история" },
+                    { text: "还是", start: 131.6, end: 132.1, py: "hái shì", tr: "yoki / или" },
+                    { text: "外语", start: 132.1, end: 132.7, py: "wài yǔ", tr: "chet tili / иностранный язык" },
+                    { text: "最重要", start: 132.7, end: 133.5, py: "zuì zhòng yào", tr: "eng muhim / самое главное" },
+                    { text: "不是", start: 133.8, end: 134.3, py: "bú shì", tr: "emas / не" },
+                    { text: "你", start: 134.3, end: 134.6, py: "nǐ", tr: "sen / то" },
+                    { text: "现在", start: 134.6, end: 135.2, py: "xiàn zài", tr: "hozir / сейчас" },
+                    { text: "有", start: 135.2, end: 135.4, py: "yǒu", tr: "qanchalik / насколько" },
+                    { text: "多", start: 135.4, end: 135.7, py: "duō", tr: "ko'p / много" },
+                    { text: "好", start: 135.7, end: 136.0, py: "hǎo", tr: "yaxshi / хорош" },
+                    { text: "而是", start: 136.0, end: 136.5, py: "ér shì", tr: "balki / а то" },
+                    { text: "你", start: 136.5, end: 136.8, py: "nǐ", tr: "sen / ты" },
+                    { text: "愿不愿意", start: 136.8, end: 137.8, py: "yuàn bu yuàn yì", tr: "xohlaysanmi / хочешь ли" },
+                    { text: "努力", start: 137.8, end: 138.4, py: "nǔ lì", tr: "harakat qilishni / стараться" }
                 ]
             },
             {
-                start: 156.3, end: 159.7,
+                start: 138.4, end: 141.5,
                 words: [
-                    { text: "学习", start: 156.3, end: 156.9, py: "xué xí", tr: "o'rganish / учебы" },
-                    { text: "的", start: 156.9, end: 157.2, py: "de", tr: "- / (суффикс)" },
-                    { text: "时候", start: 157.2, end: 157.8, py: "shí hou", tr: "paytida / во время" },
-                    { text: "遇到", start: 157.8, end: 158.3, py: "yù dào", tr: "duch kelish / сталкиваться с" },
-                    { text: "困难", start: 158.3, end: 158.9, py: "kùn nán", tr: "qiyinchiliklarga / трудностями" },
-                    { text: "，", start: 158.9, end: 158.9, py: "", tr: "" },
-                    { text: "很", start: 158.9, end: 159.2, py: "hěn", tr: "juda / очень" },
-                    { text: "正常", start: 159.2, end: 159.7, py: "zhèng cháng", tr: "normal / нормально" },
-                    { text: "。", start: 159.7, end: 159.7, py: "", tr: "" }
+                    { text: "学习", start: 138.4, end: 138.9, py: "xué xí", tr: "o'rganish / учебы" },
+                    { text: "时候", start: 139.2, end: 139.7, py: "shí hou", tr: "paytida / во время" },
+                    { text: "遇到", start: 139.7, end: 140.2, py: "yù dào", tr: "duch kelish / сталкиваться с" },
+                    { text: "困难", start: 140.2, end: 140.7, py: "kùn nán", tr: "qiyinchiliklarga / трудностями" },
+                    { text: "很", start: 140.7, end: 141.0, py: "hěn", tr: "juda / очень" },
+                    { text: "正常", start: 141.0, end: 141.5, py: "zhèng cháng", tr: "normal / нормально" }
                 ]
             },
             {
-                start: 160.0, end: 162.0,
+                start: 141.5, end: 143.1,
                 words: [
-                    { text: "觉得", start: 160.0, end: 160.6, py: "jué de", tr: "tuyulishi / кажется" },
-                    { text: "难", start: 160.6, end: 160.9, py: "nán", tr: "qiyin / сложным" },
-                    { text: "，", start: 160.9, end: 160.9, py: "", tr: "" },
-                    { text: "也", start: 160.9, end: 161.2, py: "yě", tr: "ham / тоже" },
-                    { text: "很", start: 161.2, end: 161.5, py: "hěn", tr: "juda / очень" },
-                    { text: "正常", start: 161.5, end: 162.0, py: "zhèng cháng", tr: "normal / нормально" },
-                    { text: "。", start: 162.0, end: 162.0, py: "", tr: "" }
+                    { text: "觉得", start: 141.5, end: 141.9, py: "jué de", tr: "tuyulishi / кажется" },
+                    { text: "难", start: 141.9, end: 142.2, py: "nán", tr: "qiyin / сложным" },
+                    { text: "也", start: 142.2, end: 142.4, py: "yě", tr: "ham / тоже" },
+                    { text: "很", start: 142.4, end: 142.6, py: "hěn", tr: "juda / очень" },
+                    { text: "正常", start: 142.6, end: 143.1, py: "zhèng cháng", tr: "normal / нормально" }
                 ]
             },
             {
-                start: 162.3, end: 164.0,
+                start: 143.1, end: 144.5,
                 words: [
-                    { text: "但是", start: 162.3, end: 162.9, py: "dàn shì", tr: "lekin / но" },
-                    { text: "不要", start: 162.9, end: 163.5, py: "bú yào", tr: "kerak emas / не нужно" },
-                    { text: "害怕", start: 163.5, end: 164.0, py: "hài pà", tr: "qo'rqish / бояться" },
-                    { text: "。", start: 164.0, end: 164.0, py: "", tr: "" }
+                    { text: "但是", start: 143.1, end: 143.6, py: "dàn shì", tr: "lekin / но" },
+                    { text: "不要", start: 143.6, end: 144.1, py: "bú yào", tr: "kerak emas / не нужно" },
+                    { text: "害怕", start: 144.1, end: 144.5, py: "hài pà", tr: "qo'rqish / бояться" }
                 ]
             },
             {
-                start: 164.3, end: 168.3,
+                start: 144.5, end: 148.5,
                 words: [
-                    { text: "认真", start: 164.3, end: 164.9, py: "rèn zhēn", tr: "diqqat bilan / внимательным" },
-                    { text: "一点", start: 164.9, end: 165.5, py: "yì diǎn", tr: "biroz / немного" },
-                    { text: "，", start: 165.5, end: 165.5, py: "", tr: "" },
-                    { text: "坚持", start: 165.5, end: 166.0, py: "jiān chí", tr: "sabr qilish / упорствовать" },
-                    { text: "一点", start: 166.0, end: 166.6, py: "yì diǎn", tr: "biroz / немного" },
-                    { text: "，", start: 166.6, end: 166.6, py: "", tr: "" },
-                    { text: "每天", start: 166.6, end: 167.2, py: "měi tiān", tr: "har kuni / каждый день" },
-                    { text: "进步", start: 167.2, end: 167.7, py: "jìn bù", tr: "oldinga siljish / прогрессировать" },
-                    { text: "一点", start: 167.7, end: 168.3, py: "yì diǎn", tr: "biroz / немного" },
-                    { text: "。", start: 168.3, end: 168.3, py: "", tr: "" }
+                    { text: "认真", start: 144.5, end: 145.0, py: "rèn zhēn", tr: "diqqat bilan / внимательным" },
+                    { text: "一点", start: 145.0, end: 145.6, py: "yì diǎn", tr: "biroz / немного" },
+                    { text: "坚持", start: 145.6, end: 146.2, py: "jiān chí", tr: "sabr qilish / упорствовать" },
+                    { text: "一点", start: 146.2, end: 146.8, py: "yì diǎn", tr: "biroz / немного" },
+                    { text: "每天", start: 146.8, end: 147.4, py: "měi tiān", tr: "har kuni / каждый день" },
+                    { text: "进步", start: 147.4, end: 147.9, py: "jìn bù", tr: "oldinga siljish / прогрессировать" },
+                    { text: "一点", start: 147.9, end: 148.5, py: "yì diǎn", tr: "biroz / немного" }
                 ]
             },
             {
-                start: 168.6, end: 172.6,
+                start: 148.5, end: 152.5,
                 words: [
-                    { text: "你", start: 168.6, end: 168.9, py: "nǐ", tr: "sen / ты" },
-                    { text: "会", start: 168.9, end: 169.2, py: "huì", tr: "-san / (вспом. глагол)" },
-                    { text: "发现", start: 169.2, end: 169.7, py: "fā xiàn", tr: "bilasan / обнаружишь" },
-                    { text: "，", start: 169.7, end: 169.7, py: "", tr: "" },
-                    { text: "原来", start: 169.7, end: 170.3, py: "yuán lái", tr: "aslida / оказывается" },
-                    { text: "自己", start: 170.3, end: 170.9, py: "zì jǐ", tr: "o'zing / сам" },
-                    { text: "真的", start: 170.9, end: 171.4, py: "zhēn de", tr: "haqiqatan ham / действительно" },
-                    { text: "可以", start: 171.4, end: 172.0, py: "kě yǐ", tr: "olasan / можешь" },
-                    { text: "做到", start: 172.0, end: 172.6, py: "zuò dào", tr: "eplash / сделать это" },
-                    { text: "。", start: 172.6, end: 172.6, py: "", tr: "" }
+                    { text: "你", start: 148.5, end: 148.8, py: "nǐ", tr: "sen / ты" },
+                    { text: "会", start: 148.8, end: 149.1, py: "huì", tr: "-san / (вспом. глагол)" },
+                    { text: "发现", start: 149.1, end: 149.7, py: "fā xiàn", tr: "bilasan / обнаружишь" },
+                    { text: "原来", start: 149.7, end: 150.3, py: "yuán lái", tr: "aslida / оказывается" },
+                    { text: "自己", start: 150.3, end: 150.8, py: "zì jǐ", tr: "o'zing / сам" },
+                    { text: "真的", start: 150.8, end: 151.4, py: "zhēn de", tr: "haqiqatan ham / действительно" },
+                    { text: "可以", start: 151.4, end: 151.9, py: "kě yǐ", tr: "olasan / можешь" },
+                    { text: "做到", start: 151.9, end: 152.5, py: "zuò dào", tr: "eplash / сделать это" }
                 ]
             },
             {
-                start: 172.9, end: 177.1,
+                start: 152.5, end: 158.3,
                 words: [
-                    { text: "好了", start: 172.9, end: 173.4, py: "hǎo le", tr: "bo'ldi / хорошо" },
-                    { text: "，", start: 173.4, end: 173.4, py: "", tr: "" },
-                    { text: "今天", start: 173.4, end: 174.0, py: "jīn tiān", tr: "bugun / сегодня" },
-                    { text: "我们", start: 174.0, end: 174.6, py: "wǒ men", tr: "biz / мы" },
-                    { text: "就", start: 174.6, end: 174.8, py: "jiù", tr: "shunday qilib / так" },
-                    { text: "先", start: 174.8, end: 175.1, py: "xiān", tr: "avval / сначала" },
-                    { text: "聊到这", start: 175.1, end: 176.0, py: "liáo dào zhè", tr: "shu yergacha suhbatlashamiz / поговорим до этого места" },
-                    { text: "，", start: 176.0, end: 176.0, py: "", tr: "" },
-                    { text: "下期", start: 176.0, end: 176.5, py: "xià qī", tr: "keyingi safar / до следующего раза" },
-                    { text: "再见", start: 176.5, end: 177.1, py: "zài jiàn", tr: "ko'rishguncha / до свидания" },
-                    { text: "。", start: 177.1, end: 177.1, py: "", tr: "" }
-                ]
-            }
-        ];
-
-        // 整理后的生词列表数据
-        const vocabData = [
-            { zh: "数学", py: "shù xué", tr: "matematika" },
-            { zh: "认真", py: "rèn zhēn", tr: "jiddiy, diqqat bilan" },
-            { zh: "笔记", py: "bǐ jì", tr: "qaydlar, konspekt" },
-            { zh: "清楚", py: "qīng chu", tr: "aniq, tushunarli" },
-            { zh: "黑板", py: "hēi bǎn", tr: "doska" },
-            { zh: "把", py: "bǎ", tr: "obyektni ko‘chirishni bildiradi" },
-            { zh: "作业", py: "zuò yè", tr: "uy vazifasi" },
-            { zh: "遍", py: "biàn", tr: "marta" },
-            { zh: "提高", py: "tí gāo", tr: "yaxshilamoq, oshirmoq" },
-            { zh: "历史", py: "lì shǐ", tr: "tarix" },
-            { zh: "难", py: "nán", tr: "qiyin" },
-            { zh: "要求", py: "yāo qiú", tr: "talab, talab qilmoq" },
-            { zh: "差", py: "chà", tr: "yomon, past" },
-            { zh: "复习", py: "fù xí", tr: "takrorlamoq" },
-            { zh: "外语", py: "wài yǔ", tr: "chet tili" },
-            { zh: "当然", py: "dāng rán", tr: "albatta" },
-            { zh: "遇到", py: "yù dào", tr: "duch kelmoq" },
-            { zh: "办公室", py: "bàn gōng shì", tr: "ofis, idora" },
-            { zh: "页", py: "yè", tr: "sahifa" },
-            { zh: "对话", py: "duì huà", tr: "muloqot, dialog" },
-            { zh: "讲", py: "jiǎng", tr: "gapirmoq, tushuntirmoq" },
-            { zh: "明白", py: "míng bai", tr: "tushunmoq" },
-            { zh: "句", py: "jù", tr: "gap (o‘lchov so‘zi)" },
-            { zh: "句子", py: "jù zi", tr: "gap" },
-            { zh: "年级", py: "nián jí", tr: "sinf, bosqich" },
-            { zh: "一般", py: "yì bān", tr: "odatda, umuman" },
-            { zh: "后年", py: "hòu nián", tr: "keyingi yildan keyingi yil" },
-            { zh: "努力", py: "nǔ lì", tr: "harakat qilmoq, tirishmoq" }
-        ];
+                    { text: "好了", start: 152.5, end: 153.1, py: "hǎo le", tr: "bo'ldi / хорошо" },
+                    { text: "今天", start: 153.1, end: 153.6, py: "jīn tiān", tr: "bugun / сегодня" },
+                    { text: "我们", start: 153.6, end: 154.2, py: "wǒ men", tr: "biz / мы" },
+                    { text: "就", start: 154.2, end: 154.4, py: "jiù", tr: "shunday qilib / так" },
+                    { text: "先", start: 154.4, end: 154.7, py: "xiān", tr: "avval / сначала" },
+                    { text: "聊到这", start: 154.7, end: 156.3, py: "liáo dào zhè", tr: "shu yergacha suhbatlashamiz / поговорим до этого места" },
+                    { text: "下次", start: 156.3, end: 157.7, py: "xià cì", tr: "keyingi safar / в следующий раз" },
+            { text: "再见", start: 157.7, end: 158.3, py: "zài jiàn", tr: "ko'rishguncha / до свидания" }
+        ]
+    }
+];
 
         const container = document.getElementById('transcript-container');
         let transcriptElements = [];
 
-        // 渲染字幕到页面
         function renderTranscript() {
             container.innerHTML = '';
             transcriptElements = [];
 
             transcriptData.forEach((item, index) => {
                 const lineDiv = document.createElement('div');
-                // 修改为 Flex 布局，左侧加上一个小的播放图标
                 lineDiv.className = "flex gap-3 p-4 mb-2 rounded-lg cursor-pointer transition-all duration-200 hover:bg-red-50 border-l-4 border-transparent group";
                 lineDiv.dataset.start = item.start;
                 lineDiv.dataset.index = index;
                 
+                // 左侧播放小图标
                 const playBtnHtml = `<div class="shrink-0 mt-2 text-gray-300 group-hover:text-red-500 transition-colors"><i data-lucide="play-circle" class="w-5 h-5"></i></div>`;
                 
                 let wordsHtml = '<div class="text-lg font-medium text-gray-800 leading-loose flex flex-wrap gap-x-1">';
                 
                 item.words.forEach(w => {
                     if (w.py) {
-                        // 带有拼音和翻译的交互式词语，移除了 cursor-help 的问号效果
+                        // 使用 cursor-pointer 替代问号
                         wordsHtml += `
                             <ruby class="dict-word relative hover:bg-red-100 hover:text-red-700 rounded px-1 transition-colors cursor-pointer" data-py="${w.py}" data-tr="${w.tr}">
                                 ${w.text}
@@ -781,7 +705,6 @@
                             </ruby>
                         `;
                     } else {
-                        // 标点符号，不支持点击
                         wordsHtml += `<span class="py-1 text-gray-500">${w.text}</span>`;
                     }
                 });
@@ -789,12 +712,10 @@
                 wordsHtml += '</div>';
                 lineDiv.innerHTML = playBtnHtml + wordsHtml;
 
-                // 处理点击逻辑：分清是点词查字典，还是点句子跳进度
+                // 点击跳转播放时间
                 lineDiv.addEventListener('click', (e) => {
-                    // 如果点中的是具体的单词，就拦截跳转行为（在后面会触发字典气泡）
-                    if (e.target.closest('.dict-word')) return;
+                    if (e.target.closest('.dict-word')) return; // 点单词不要跳转视频
 
-                    // 否则（点中空白处或播放按钮），控制视频跳转
                     if (player && player.seekTo) {
                         player.seekTo(item.start, true);
                         player.playVideo();
@@ -805,13 +726,10 @@
                 transcriptElements.push(lineDiv);
             });
 
-            // 重新初始化图标
             lucide.createIcons();
-            // 绑定词典交互事件
             bindDictionaryEvents();
         }
 
-        // 词典交互逻辑 (弹窗)
         function bindDictionaryEvents() {
             const tooltip = document.getElementById('dictionary-tooltip');
             const pyEl = document.getElementById('tt-pinyin');
@@ -819,49 +737,40 @@
 
             document.querySelectorAll('.dict-word').forEach(word => {
                 word.addEventListener('click', (e) => {
-                    e.stopPropagation(); // 阻止事件冒泡
+                    e.stopPropagation();
                     const py = e.currentTarget.dataset.py;
                     const tr = e.currentTarget.dataset.tr;
 
                     pyEl.textContent = py;
                     
-                    // 检查翻译中是否包含 " / "，如果有，则分割成两行
-                    if (tr && tr.includes(' / ')) {
-                        const parts = tr.split(' / ');
-                        // 第一行乌兹别克语（保持原样加粗），第二行俄语（稍微改小变浅色）
-                        trEl.innerHTML = `<div class="mb-1 text-[13px]">${parts[0]}</div><div class="text-[11px] text-gray-600 font-normal">${parts[1]}</div>`;
+                    // 将乌兹别克语和俄语拆分为两行显示
+                    if (tr && tr.includes('/')) {
+                        const parts = tr.split('/');
+                        trEl.innerHTML = `<div class="font-bold text-gray-900">${parts[0].trim()}</div><div class="font-normal text-xs text-gray-600 mt-1">${parts[1].trim()}</div>`;
                     } else {
-                        trEl.textContent = tr;
+                        trEl.innerHTML = `<div class="font-bold text-gray-900">${tr}</div>`;
                     }
 
-                    // 先移除隐藏状态以便正确计算尺寸
                     tooltip.classList.remove('opacity-0', 'invisible');
 
-                    // 计算并设置弹窗位置（在单词正上方，稍微更紧凑一点）
                     const rect = e.currentTarget.getBoundingClientRect();
                     tooltip.style.top = (rect.top - tooltip.offsetHeight - 6) + 'px';
                     tooltip.style.left = (rect.left + (rect.width / 2)) + 'px';
                 });
             });
 
-            // 点击页面任意其他地方隐藏弹窗
             document.addEventListener('click', () => {
                 if (tooltip) tooltip.classList.add('opacity-0', 'invisible');
             });
 
-            // 滚动字幕框时也隐藏弹窗，避免卡片悬停错位
             container.addEventListener('scroll', () => {
                 if (tooltip) tooltip.classList.add('opacity-0', 'invisible');
             });
         }
 
-        // ==========================================
-        // YouTube IFrame API 逻辑
-        // ==========================================
         let player;
         let syncInterval;
 
-        // 1. 加载 YouTube API 脚本
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         const firstScriptTag = document.getElementsByTagName('script')[0];
@@ -871,9 +780,7 @@
             document.head.appendChild(tag);
         }
 
-        // 2. API 准备好后自动调用此函数 (绑定到全局确保被触发)
         window.onYouTubeIframeAPIReady = function() {
-            // 直接绑定到页面上已存在的 iframe (id="youtube-player")
             player = new YT.Player('youtube-player', {
                 events: {
                     'onStateChange': onPlayerStateChange
@@ -881,24 +788,19 @@
             });
         };
 
-        // 3. 监听播放器状态
         function onPlayerStateChange(event) {
             if (event.data == YT.PlayerState.PLAYING) {
-                // 视频播放时，每 0.5 秒检查一次时间并同步字幕
                 syncInterval = setInterval(syncTranscript, 500);
             } else {
-                // 暂停或结束时，停止同步
                 clearInterval(syncInterval);
             }
         }
 
-        // 4. 同步高亮当前字幕
         let currentIndex = -1;
         function syncTranscript() {
             if (!player || !player.getCurrentTime) return;
             const currentTime = player.getCurrentTime();
 
-            // 查找当前时间属于哪一句
             let activeIndex = -1;
             for (let i = 0; i < transcriptData.length; i++) {
                 if (currentTime >= transcriptData[i].start && currentTime < transcriptData[i].end) {
@@ -907,40 +809,33 @@
                 }
             }
 
-            // 如果当前句子发生了变化，更新 UI
-            if (activeIndex !== currentIndex && activeIndex !== -1) {
-                // 清除之前的激活状态
-                if (currentIndex !== -1) {
+            if (activeIndex !== currentIndex) {
+                if (currentIndex !== -1 && transcriptElements[currentIndex]) {
                     transcriptElements[currentIndex].classList.remove('bg-red-50', 'border-red-500');
                     transcriptElements[currentIndex].classList.add('border-transparent');
                 }
                 
-                // 设置新的激活状态
-                transcriptElements[activeIndex].classList.add('bg-red-50', 'border-red-500');
-                transcriptElements[activeIndex].classList.remove('border-transparent');
-                
-                // 让滚轮自动滚动到高亮的那一句
-                const activeEl = transcriptElements[activeIndex];
-                container.scrollTo({
-                    top: activeEl.offsetTop - container.offsetTop - 60,
-                    behavior: 'smooth'
-                });
+                if (activeIndex !== -1 && transcriptElements[activeIndex]) {
+                    transcriptElements[activeIndex].classList.add('bg-red-50', 'border-red-500');
+                    transcriptElements[activeIndex].classList.remove('border-transparent');
+                    
+                    const activeEl = transcriptElements[activeIndex];
+                    container.scrollTo({
+                        top: activeEl.offsetTop - container.offsetTop - 60,
+                        behavior: 'smooth'
+                    });
+                }
 
                 currentIndex = activeIndex;
             }
         }
 
-        // ==========================================
-        // 拼音开关逻辑
-        // ==========================================
         const togglePinyin = document.getElementById('toggle-pinyin');
-        
         togglePinyin.addEventListener('change', (e) => {
             const isChecked = e.target.checked;
             const dot = e.target.parentElement.querySelector('.dot');
             const bg = e.target.parentElement.querySelector('.toggle-bg');
             
-            // 切换开关动画
             if(isChecked) {
                 dot.classList.add('translate-x-4');
                 bg.classList.add('bg-red-500');
@@ -951,37 +846,14 @@
                 bg.classList.add('bg-gray-200');
             }
 
-            // 隐藏/显示拼音文本
             const pinyinElements = document.querySelectorAll('.pinyin-text');
             pinyinElements.forEach(el => {
                 el.style.display = isChecked ? 'block' : 'none';
             });
         });
 
-        // 初始化
         renderTranscript();
-        renderVocab(); // 渲染生词列表
         
-        // 渲染生词列表的函数
-        function renderVocab() {
-            const vocabContainer = document.getElementById('vocab-container');
-            if (!vocabContainer) return;
-            
-            vocabData.forEach((item) => {
-                const li = document.createElement('li');
-                li.className = "flex flex-col bg-gray-50/50 hover:bg-red-50/50 rounded-lg p-3 border border-gray-100 hover:border-red-200 transition-colors shadow-sm cursor-default";
-                li.innerHTML = `
-                    <div class="flex items-baseline justify-between mb-1.5 gap-2">
-                        <span class="text-lg font-bold text-gray-800">${item.zh}</span>
-                        <span class="text-xs font-mono text-gray-500 bg-white px-1.5 py-0.5 rounded border border-gray-200 shadow-sm">${item.py}</span>
-                    </div>
-                    <span class="text-sm text-gray-600 font-medium leading-tight">${item.tr}</span>
-                `;
-                vocabContainer.appendChild(li);
-            });
-        }
-        
-        // 初始化 Toggle 样式
         const initDot = togglePinyin.parentElement.querySelector('.dot');
         const initBg = togglePinyin.parentElement.querySelector('.toggle-bg');
         initDot.classList.add('translate-x-4');
