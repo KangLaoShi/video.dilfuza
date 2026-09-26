@@ -38,18 +38,22 @@
             /* ① 手机端视频：固定/悬浮在顶部 */
             .mobile-video {
                 order: 1 !important;
-                position: sticky !important;
+                position: fixed !important;
                 top: 64px !important;
-                z-index: 40 !important;
-                width: 100% !important;
-                background: #f9fafb;
-                padding-bottom: 0.25rem;
+                left: 0 !important;
+                right: 0 !important;
+                z-index: 45 !important;
+                width: 100vw !important;
+                background: #000;
+                padding: 0 !important;
+                margin: 0 !important;
             }
 
             /* ② 课程简介 */
             .mobile-intro {
                 order: 2 !important;
                 width: 100% !important;
+                margin-top: calc(56.25vw + 0.5rem) !important;
             }
 
             /* ③ 手机端字幕：不再限制 500px 高度，由整页向下滚动 */
