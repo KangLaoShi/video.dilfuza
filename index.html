@@ -32,12 +32,12 @@
     </header>
 
     <!-- 主体内容区 -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col lg:flex-row gap-6 lg:items-start relative">
+    <!-- 移动端使用 Flex 纵向排序，PC端使用 Grid 网格布局 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col lg:grid lg:grid-cols-12 gap-6 lg:items-start relative">
         
-        <!-- 左侧/上方：视频播放器与详情区域 -->
-        <div class="w-full lg:w-7/12 flex flex-col gap-4">
+        <!-- 第一部分：视频播放器与详情 (移动端第一，PC端左上) -->
+        <div class="order-1 lg:col-span-7 lg:col-start-1 lg:row-start-1 flex flex-col gap-4 w-full">
             
-            <!-- 恢复为标准的横屏 16:9 比例容器 -->
             <div class="bg-black rounded-xl overflow-hidden shadow-lg relative flex justify-center items-center w-full aspect-video">
                 <!-- 添加占位提示：当沙盒拦截视频时，能给用户明确的反馈 -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-6 text-center z-0">
@@ -62,27 +62,14 @@
                 <p class="mt-4 text-gray-600 text-sm md:text-base leading-relaxed">
                     在这节课中，康老师通过一个学生的笔记故事，分享了学习语言时的正确态度和复习方法。注意听康老师的发音，你可以点击右侧（或下方）的字幕来反复练习某一句！
                 </p>
-                <p class="mt-1 text-gray-500 text-sm leading-relaxed">
+                <p class="text-gray-500 text-sm leading-relaxed">
                     Ushbu darsda o'qituvchi Kang bir o'quvchining qaydlari haqidagi hikoya orqali til o'rganishdagi to'g'ri yondashuv va takrorlash usullari bilan o'rtoqlashadi. O'qituvchi Kangning talaffuzini diqqat bilan tinglang, istalgan gapni qayta-qayta mashq qilish uchun o'ng tomondagi (yoki pastdagi) subtitrlarga bosishingiz mumkin!
                 </p>
             </div>
-            
-            <!-- 动态生词列表区域 -->
-            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex flex-col flex-1">
-                <h2 class="font-bold flex items-center gap-2 mb-4 text-lg border-b border-gray-100 pb-2">
-                    <i data-lucide="book-a" class="w-5 h-5 text-red-600"></i>
-                    生词列表 (Vocabulary)
-                </h2>
-                <div class="pr-2">
-                    <ul id="vocab-container" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
-                        <!-- 由 JavaScript 动态生成 -->
-                    </ul>
-                </div>
-            </div>
         </div>
 
-        <!-- 右侧/下方：交互式同步字幕区域 (Sticky 浮动) -->
-        <div class="w-full lg:w-5/12 flex flex-col h-[500px] lg:h-[calc(100vh-6rem)] lg:sticky lg:top-20 z-40">
+        <!-- 第二部分：交互式同步字幕区域 (移动端第二，PC端右侧悬浮，跨越两行) -->
+        <div class="order-2 lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:row-span-2 w-full flex flex-col h-[500px] lg:h-[calc(100vh-6rem)] lg:sticky lg:top-20 z-40">
             <div class="bg-white rounded-t-xl p-4 border border-gray-100 border-b-0 flex justify-between items-center shadow-sm shrink-0">
                 <h2 class="font-bold flex items-center gap-2 text-lg">
                     <i data-lucide="align-left" class="w-5 h-5 text-red-600"></i>
@@ -104,6 +91,20 @@
                 <!-- 字幕由 JavaScript 动态生成 -->
             </div>
         </div>
+
+        <!-- 第三部分：动态生词列表区域 (移动端第三，PC端左下) -->
+        <div class="order-3 lg:col-span-7 lg:col-start-1 lg:row-start-2 w-full bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex flex-col">
+            <h2 class="font-bold flex items-center gap-2 mb-4 text-lg border-b border-gray-100 pb-2">
+                <i data-lucide="book-a" class="w-5 h-5 text-red-600"></i>
+                生词列表 (Vocabulary)
+            </h2>
+            <div class="pr-2">
+                <ul id="vocab-container" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
+                    <!-- 由 JavaScript 动态生成 -->
+                </ul>
+            </div>
+        </div>
+
     </main>
 
     <!-- 交互式词典弹窗 (Tooltip) - 浅蓝色半透明的毛玻璃样式 -->
@@ -116,34 +117,32 @@
         lucide.createIcons();
 
         const vocabularyData = [
-            { no: 1, text: "数学", py: "shù xué", tr: "matematika" },
-            { no: 2, text: "认真", py: "rèn zhēn", tr: "jiddiy, diqqat bilan" },
-            { no: 3, text: "笔记", py: "bǐ jì", tr: "qaydlar, konspekt" },
-            { no: 4, text: "清楚", py: "qīng chu", tr: "aniq, tushunarli" },
-            { no: 5, text: "黑板", py: "hēi bǎn", tr: "doska" },
-            { no: 6, text: "把", py: "bǎ", tr: "obyektni ko‘chirishni bildiradi" },
-            { no: 7, text: "作业", py: "zuò yè", tr: "uy vazifasi" },
-            { no: 8, text: "遍", py: "biàn", tr: "marta" },
-            { no: 9, text: "提高", py: "tí gāo", tr: "yaxshilamoq, oshirmoq" },
-            { no: 10, text: "历史", py: "lì shǐ", tr: "tarix" },
-            { no: 11, text: "难", py: "nán", tr: "qiyin" },
-            { no: 12, text: "要求", py: "yāo qiú", tr: "talab, talab qilmoq" },
-            { no: 13, text: "差", py: "chà", tr: "yomon, past" },
-            { no: 14, text: "复习", py: "fù xí", tr: "takrorlamoq" },
-            { no: 15, text: "外语", py: "wài yǔ", tr: "chet tili" },
-            { no: 16, text: "当然", py: "dāng rán", tr: "albatta" },
-            { no: 17, text: "遇到", py: "yù dào", tr: "duch kelmoq" },
-            { no: 18, text: "办公室", py: "bàn gōng shì", tr: "ofis, idora" },
-            { no: 19, text: "页", py: "yè", tr: "sahifa" },
-            { no: 20, text: "对话", py: "duì huà", tr: "muloqot, dialog" },
-            { no: 21, text: "讲", py: "jiǎng", tr: "gapirmoq, tushuntirmoq" },
-            { no: 22, text: "明白", py: "míng bai", tr: "tushunmoq" },
-            { no: 23, text: "句", py: "jù", tr: "gap (o‘lchov so‘zi)" },
-            { no: 24, text: "句子", py: "jù zi", tr: "gap" },
-            { no: 25, text: "年级", py: "nián jí", tr: "sinf, bosqich" },
-            { no: 26, text: "一般", py: "yì bān", tr: "odatda, umuman" },
-            { no: 27, text: "后年", py: "hòu nián", tr: "keyingi yildan keyingi yil" },
-            { no: 28, text: "努力", py: "nǔ lì", tr: "harakat qilmoq, tirishmoq" }
+            { no: 1, text: "校园", py: "xiào yuán", tr: "kampus" },
+            { no: 2, text: "卡", py: "kǎ", tr: "karta" },
+            { no: 3, text: "球场", py: "qiú chǎng", tr: "maydon" },
+            { no: 4, text: "为了", py: "wèi le", tr: "uchun" },
+            { no: 5, text: "运动会", py: "yùn dòng huì", tr: "sport musobaqasi" },
+            { no: 6, text: "男生", py: "nán shēng", tr: "o‘g‘il bola (talaba)" },
+            { no: 7, text: "练", py: "liàn", tr: "shug‘ullanmoq" },
+            { no: 8, text: "参加", py: "cān jiā", tr: "qatnashmoq" },
+            { no: 9, text: "网球", py: "wǎng qiú", tr: "tennis" },
+            { no: 10, text: "比赛", py: "bǐ sài", tr: "musobaqa" },
+            { no: 11, text: "练习", py: "liàn xí", tr: "mashq qilmoq" },
+            { no: 12, text: "好多", py: "hǎo duō", tr: "juda ko‘p" },
+            { no: 13, text: "几乎", py: "jī hū", tr: "deyarli" },
+            { no: 14, text: "只是", py: "zhǐ shì", tr: "shunchaki, faqat" },
+            { no: 15, text: "啤酒", py: "pí jiǔ", tr: "pivo" },
+            { no: 16, text: "受到", py: "shòu dào", tr: "qabul qilmoq, ta’sirlanmoq" },
+            { no: 17, text: "影响", py: "yǐng xiǎng", tr: "ta’sir" },
+            { no: 18, text: "紧张", py: "jǐn zhāng", tr: "asabiy, xavotirli" },
+            { no: 19, text: "得分", py: "dé fēn", tr: "ball olmoq" },
+            { no: 20, text: "主要", py: "zhǔ yào", tr: "asosiy" },
+            { no: 21, text: "体育", py: "tǐ yù", tr: "sport" },
+            { no: 22, text: "成绩", py: "chéng jì", tr: "natija, ko‘rsatkich" },
+            { no: 23, text: "世界", py: "shì jiè", tr: "dunyo" },
+            { no: 24, text: "运动员", py: "yùn dòng yuán", tr: "sportchi" },
+            { no: 25, text: "奥运会", py: "Ào yùn huì", tr: "Olimpiya o‘yinlari" },
+            { no: 26, text: "得到", py: "dé dào", tr: "qo‘lga kiritmoq" }
         ];
 
         const vocabContainer = document.getElementById('vocab-container');
