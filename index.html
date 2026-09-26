@@ -16,6 +16,70 @@
         /* 拼音汉字注音样式 (Ruby) */
         ruby { ruby-align: center; }
         rt { font-size: 0.75rem; color: #6b7280; user-select: none; }
+
+        /* ================================
+           响应式布局
+           PC：保持原来的左视频 + 右字幕
+           手机：视频固定在顶部，下面依次为简介、字幕、生词
+           ================================ */
+        @media (max-width: 1023px) {
+            /* 手机端主区域改为纵向排列 */
+            main.mobile-layout {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 1rem !important;
+            }
+
+            /* 让视频、简介、生词可以按照 main 的 order 排列 */
+            .mobile-content-wrapper {
+                display: contents !important;
+            }
+
+            /* ① 手机端视频：固定/悬浮在顶部 */
+            .mobile-video {
+                order: 1 !important;
+                position: sticky !important;
+                top: 64px !important;
+                z-index: 40 !important;
+                width: 100% !important;
+                background: #f9fafb;
+                padding-bottom: 0.25rem;
+            }
+
+            /* ② 课程简介 */
+            .mobile-intro {
+                order: 2 !important;
+                width: 100% !important;
+            }
+
+            /* ③ 手机端字幕：不再限制 500px 高度，由整页向下滚动 */
+            .mobile-transcript {
+                order: 3 !important;
+                width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                position: static !important;
+            }
+
+            .mobile-transcript-list {
+                overflow-y: visible !important;
+                height: auto !important;
+                max-height: none !important;
+            }
+
+            /* ④ 生词 */
+            .mobile-vocab {
+                order: 4 !important;
+                width: 100% !important;
+            }
+        }
+
+        /* PC端完全保持原来的布局和尺寸 */
+        @media (min-width: 1024px) {
+            .mobile-content-wrapper {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
@@ -33,12 +97,12 @@
 
     <!-- 主体内容区 -->
     <!-- 移动端使用 Flex 纵向排序，PC端使用 Grid 网格布局 -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col lg:grid lg:grid-cols-12 gap-6 lg:items-start relative">
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col lg:grid lg:grid-cols-12 gap-6 lg:items-start relative mobile-layout">
         
         <!-- 第一部分：视频播放器与详情 (移动端第一，PC端左上) -->
-        <div class="order-1 lg:col-span-7 lg:col-start-1 lg:row-start-1 flex flex-col gap-4 w-full">
+        <div class="order-1 lg:col-span-7 lg:col-start-1 lg:row-start-1 flex flex-col gap-4 w-full mobile-content-wrapper">
             
-            <div class="bg-black rounded-xl overflow-hidden shadow-lg relative flex justify-center items-center w-full aspect-video">
+            <div class="bg-black rounded-xl overflow-hidden shadow-lg relative flex justify-center items-center w-full aspect-video mobile-video">
                 <!-- 添加占位提示：当沙盒拦截视频时，能给用户明确的反馈 -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-6 text-center z-0">
                     <p class="text-sm mb-1">正在加载 YouTube 播放器...</p>
@@ -53,7 +117,7 @@
                 </iframe>
             </div>
             
-            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 mobile-intro">
                 <h1 class="text-2xl font-bold mb-2 md:text-3xl">学习外语的方法与态度</h1>
                 <div class="flex items-center gap-4 text-sm text-gray-500 mt-2">
                     <span class="bg-blue-50 text-blue-600 px-2 py-1 rounded font-medium">Intermediate (中级)</span>
@@ -69,7 +133,7 @@
         </div>
 
         <!-- 第二部分：交互式同步字幕区域 (移动端第二，PC端右侧悬浮，跨越两行) -->
-        <div class="order-2 lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:row-span-2 w-full flex flex-col h-[500px] lg:h-[calc(100vh-6rem)] lg:sticky lg:top-20 z-40">
+        <div class="order-2 lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:row-span-2 w-full flex flex-col h-[500px] lg:h-[calc(100vh-6rem)] lg:sticky lg:top-20 z-40 mobile-transcript">
             <div class="bg-white rounded-t-xl p-4 border border-gray-100 border-b-0 flex justify-between items-center shadow-sm shrink-0">
                 <h2 class="font-bold flex items-center gap-2 text-lg">
                     <i data-lucide="align-left" class="w-5 h-5 text-red-600"></i>
@@ -87,13 +151,13 @@
             </div>
             
             <!-- 滚动的字幕列表 -->
-            <div id="transcript-container" class="bg-white border border-gray-100 rounded-b-xl shadow-sm flex-1 overflow-y-auto p-2 scroll-smooth">
+            <div id="transcript-container" class="bg-white border border-gray-100 rounded-b-xl shadow-sm flex-1 overflow-y-auto p-2 scroll-smooth mobile-transcript-list">
                 <!-- 字幕由 JavaScript 动态生成 -->
             </div>
         </div>
 
         <!-- 第三部分：动态生词列表区域 (移动端第三，PC端左下) -->
-        <div class="order-3 lg:col-span-7 lg:col-start-1 lg:row-start-2 w-full bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex flex-col">
+        <div class="order-3 lg:col-span-7 lg:col-start-1 lg:row-start-2 w-full bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex flex-col mobile-vocab">
             <h2 class="font-bold flex items-center gap-2 mb-4 text-lg border-b border-gray-100 pb-2">
                 <i data-lucide="book-a" class="w-5 h-5 text-red-600"></i>
                 生词列表 (Vocabulary)
@@ -813,10 +877,24 @@
                     transcriptElements[activeIndex].classList.remove('border-transparent');
                     
                     const activeEl = transcriptElements[activeIndex];
-                    container.scrollTo({
-                        top: activeEl.offsetTop - container.offsetTop - 60,
-                        behavior: 'smooth'
-                    });
+
+                    if (window.innerWidth < 1024) {
+                        /* 手机端字幕不再独立滚动，让整页自然滚动 */
+                        const rect = activeEl.getBoundingClientRect();
+                        const headerOffset = 80;
+                        if (rect.top < headerOffset || rect.bottom > window.innerHeight) {
+                            window.scrollTo({
+                                top: window.scrollY + rect.top - headerOffset,
+                                behavior: 'smooth'
+                            });
+                        }
+                    } else {
+                        /* PC端保持原来的字幕区域内部滚动 */
+                        container.scrollTo({
+                            top: activeEl.offsetTop - container.offsetTop - 60,
+                            behavior: 'smooth'
+                        });
+                    }
                 }
 
                 currentIndex = activeIndex;
